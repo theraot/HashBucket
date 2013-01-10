@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("HashBucket")]
-[assembly: AssemblyCopyright("Copyright by Theraot © 2012")]
+[assembly: AssemblyCopyright("Copyright by Theraot © 2012 - 2013")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
