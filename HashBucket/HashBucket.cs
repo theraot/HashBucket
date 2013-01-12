@@ -55,7 +55,7 @@ namespace Theraot.Threading
         /// <param name="maxProbing">The maximum number of steps in linear probing.</param>
         /// <exception cref="System.ArgumentOutOfRangeException">maxProbing;maxProbing must be greater or equal to 1 and less than capacity.</exception>
         public HashBucket(int capacity, int maxProbing)
-            : this(capacity, EqualityComparer<TKey>.Default, INT_DefaultMaxProbing)
+            : this(capacity, EqualityComparer<TKey>.Default, maxProbing)
         {
             // Empty
         }
