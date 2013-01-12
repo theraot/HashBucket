@@ -28,9 +28,7 @@ namespace Theraot.Threading
         private IEqualityComparer<TKey> _keyComparer;
         private int _maxProbing;
         private volatile int _revision;
-        private object _syncroot = new object();
         private int _status;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="HashBucket{TValue}" /> class.
         /// </summary>
@@ -53,9 +51,33 @@ namespace Theraot.Threading
         /// <summary>
         /// Initializes a new instance of the <see cref="HashBucket{TValue}" /> class.
         /// </summary>
+        /// <param name="capacity">The initial capacity.</param>
+        /// <param name="maxProbing">The maximum number of steps in linear probing.</param>
+        /// <exception cref="System.ArgumentOutOfRangeException">maxProbing;maxProbing must be greater or equal to 1 and less than capacity.</exception>
+        public HashBucket(int capacity, int maxProbing)
+            : this(capacity, EqualityComparer<TKey>.Default, INT_DefaultMaxProbing)
+        {
+            // Empty
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="HashBucket{TValue}" /> class.
+        /// </summary>
         /// <param name="comparer">The key comparer.</param>
         public HashBucket(IEqualityComparer<TKey> comparer)
         : this(INT_DefaultCapacity, comparer, INT_DefaultMaxProbing)
+        {
+            // Empty
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="HashBucket{TValue}" /> class.
+        /// </summary>
+        /// <param name="comparer">The key comparer.</param>
+        /// <param name="maxProbing">The maximum number of steps in linear probing.</param>
+        /// <exception cref="System.ArgumentOutOfRangeException">maxProbing;maxProbing must be greater or equal to 1 and less than capacity.</exception>
+        public HashBucket(IEqualityComparer<TKey> comparer, int maxProbing)
+            : this(INT_DefaultCapacity, comparer, INT_DefaultMaxProbing)
         {
             // Empty
         }
