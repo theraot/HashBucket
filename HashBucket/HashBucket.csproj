@@ -38,7 +38,7 @@
   <ItemGroup>
     <Compile Include="Bucket.cs" />
     <Compile Include="CircularBucket.cs" />
-    <Compile Include="HashBucket.FixedSizeHashBucket.cs" />
+    <Compile Include="FixedSizeHashBucket.cs" />
     <Compile Include="HashBucket.cs" />
     <Compile Include="IntHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
