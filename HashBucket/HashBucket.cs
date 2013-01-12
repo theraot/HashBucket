@@ -23,8 +23,8 @@ namespace Theraot.Threading
         private int _copyingThreads;
         private int _copyPosition;
         private int _count;
-        private FixedSizeHashBucket _entriesNew;
-        private FixedSizeHashBucket _entriesOld;
+        private FixedSizeHashBucket<TKey, TValue> _entriesNew;
+        private FixedSizeHashBucket<TKey, TValue> _entriesOld;
         private IEqualityComparer<TKey> _keyComparer;
         private int _maxProbing;
         private volatile int _revision;
@@ -110,7 +110,7 @@ namespace Theraot.Threading
             {
                 _keyComparer = comparer ?? EqualityComparer<TKey>.Default;
                 _entriesOld = null;
-                _entriesNew = new FixedSizeHashBucket(capacity, _keyComparer);
+                _entriesNew = new FixedSizeHashBucket<TKey, TValue>(capacity, _keyComparer);
                 _maxProbing = maxProbing;
             }
         }
@@ -197,7 +197,7 @@ namespace Theraot.Threading
         public void Clear()
         {
             _entriesOld = null;
-            _entriesNew = new FixedSizeHashBucket(INT_DefaultCapacity, _keyComparer);
+            _entriesNew = new FixedSizeHashBucket<TKey, TValue>(INT_DefaultCapacity, _keyComparer);
             _revision++;
         }
 
@@ -345,7 +345,7 @@ namespace Theraot.Threading
         }
 
         /// <summary>
-        /// Tries to retrieve value associated with the specified key.
+        /// Tries to retrieve the value associated with the specified key.
         /// </summary>
         /// <param name="key">The key.</param>
         /// <param name="value">The value.</param>
@@ -392,7 +392,7 @@ namespace Theraot.Threading
             }
         }
 
-        private int AddExtracted(TKey key, TValue value, FixedSizeHashBucket entries, out bool isCollision)
+        private int AddExtracted(TKey key, TValue value, FixedSizeHashBucket<TKey, TValue> entries, out bool isCollision)
         {
             isCollision = true;
             if (entries != null)
@@ -409,7 +409,7 @@ namespace Theraot.Threading
             return -1;
         }
 
-        private bool ContainsKeyExtracted(TKey key, HashBucket<TKey, TValue>.FixedSizeHashBucket entries)
+        private bool ContainsKeyExtracted(TKey key, FixedSizeHashBucket<TKey, TValue> entries)
         {
             for (int attempts = 0; attempts < _maxProbing; attempts++)
             {
@@ -443,7 +443,7 @@ namespace Theraot.Threading
                                 Thread.CurrentThread.Priority = ThreadPriority.Highest;
                                 Thread.VolatileWrite(ref _copyPosition, -1);
                                 var newCapacity = _entriesNew.Capacity * 2;
-                                _entriesOld = Interlocked.Exchange(ref _entriesNew, new FixedSizeHashBucket(newCapacity, _keyComparer));
+                                _entriesOld = Interlocked.Exchange(ref _entriesNew, new FixedSizeHashBucket<TKey, TValue>(newCapacity, _keyComparer));
                                 oldStatus = Interlocked.CompareExchange(ref _status, 3, 2);
                             }
                             finally
@@ -506,7 +506,7 @@ namespace Theraot.Threading
             while (status != 0);
         }
 
-        private int IsOperationSafe(FixedSizeHashBucket entries, int revision)
+        private int IsOperationSafe(FixedSizeHashBucket<TKey, TValue> entries, int revision)
         {
             int result = 5;
             bool check = _revision != revision;
@@ -566,7 +566,7 @@ namespace Theraot.Threading
             }
         }
 
-        private bool RemoveExtracted(TKey key, FixedSizeHashBucket entries)
+        private bool RemoveExtracted(TKey key, FixedSizeHashBucket<TKey, TValue> entries)
         {
             if (entries != null)
             {
@@ -581,7 +581,7 @@ namespace Theraot.Threading
             return false;
         }
 
-        private int SetExtracted(TKey key, TValue value, FixedSizeHashBucket entries, out bool isNew)
+        private int SetExtracted(TKey key, TValue value, FixedSizeHashBucket<TKey, TValue> entries, out bool isNew)
         {
             isNew = false;
             if (entries != null)
@@ -598,7 +598,7 @@ namespace Theraot.Threading
             return -1;
         }
 
-        private bool TryGetValueExtracted(TKey key, FixedSizeHashBucket entries, out TValue value)
+        private bool TryGetValueExtracted(TKey key, FixedSizeHashBucket<TKey, TValue> entries, out TValue value)
         {
             value = default(TValue);
             if (entries != null)
