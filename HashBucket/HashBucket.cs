@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace Theraot.Threading
@@ -29,11 +27,12 @@ namespace Theraot.Threading
         private int _maxProbing;
         private volatile int _revision;
         private int _status;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="HashBucket{TValue}" /> class.
         /// </summary>
         public HashBucket()
-        : this(INT_DefaultCapacity, EqualityComparer<TKey>.Default, INT_DefaultMaxProbing)
+            : this(INT_DefaultCapacity, EqualityComparer<TKey>.Default, INT_DefaultMaxProbing)
         {
             // Empty
         }
@@ -43,7 +42,7 @@ namespace Theraot.Threading
         /// </summary>
         /// <param name="capacity">The initial capacity.</param>
         public HashBucket(int capacity)
-        : this(capacity, EqualityComparer<TKey>.Default, INT_DefaultMaxProbing)
+            : this(capacity, EqualityComparer<TKey>.Default, INT_DefaultMaxProbing)
         {
             // Empty
         }
@@ -65,7 +64,7 @@ namespace Theraot.Threading
         /// </summary>
         /// <param name="comparer">The key comparer.</param>
         public HashBucket(IEqualityComparer<TKey> comparer)
-        : this(INT_DefaultCapacity, comparer, INT_DefaultMaxProbing)
+            : this(INT_DefaultCapacity, comparer, INT_DefaultMaxProbing)
         {
             // Empty
         }
@@ -88,7 +87,7 @@ namespace Theraot.Threading
         /// <param name="capacity">The initial capacity.</param>
         /// <param name="comparer">The key comparer.</param>
         public HashBucket(int capacity, IEqualityComparer<TKey> comparer)
-        : this(capacity, comparer, INT_DefaultMaxProbing)
+            : this(capacity, comparer, INT_DefaultMaxProbing)
         {
             // Empty
         }
@@ -431,6 +430,7 @@ namespace Theraot.Threading
                 switch (status)
                 {
                     case 1:
+
                         // This area is only accessed by one thread, if that thread is aborted, we are doomed.
                         // This class is not abort safe, aside from a thread being aborted here, a thread being aborted on status == 2 will mean lost items
                         var priority = Thread.CurrentThread.Priority;
@@ -453,7 +453,9 @@ namespace Theraot.Threading
                             }
                         }
                         break;
+
                     case 2:
+
                         // This is the whole reason why this datastructure is not wait free.
                         // Testing shows that it is uncommon that a thread enters here.
                         // _status is 2 only for a short period.
@@ -461,7 +463,9 @@ namespace Theraot.Threading
                         // Going completely wait-free adds complexity with deminished value.
                         Thread.SpinWait(INT_SpinWaitHint);
                         break;
+
                     case 3:
+
                         // It is time to cooperate to copy the old storage to the new one
                         var old = _entriesOld;
                         if (old != null)
@@ -489,7 +493,9 @@ namespace Theraot.Threading
                             Interlocked.Decrement(ref _copyingThreads);
                         }
                         break;
+
                     case 4:
+
                         // Our copy is finished, we don't need the old storage anymore
                         oldStatus = Interlocked.CompareExchange(ref _status, 2, 4);
                         if (oldStatus == 4)
@@ -499,6 +505,7 @@ namespace Theraot.Threading
                             oldStatus = Interlocked.CompareExchange(ref _status, 0, 2);
                         }
                         break;
+
                     default:
                         break;
                 }
