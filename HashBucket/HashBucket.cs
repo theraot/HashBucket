@@ -117,6 +117,17 @@ namespace Theraot.Threading
         private delegate bool Operation();
 
         /// <summary>
+        /// Gets the capacity.
+        /// </summary>
+        public int Capacity
+        {
+            get
+            {
+                return _entriesNew.Capacity;
+            }
+        }
+
+        /// <summary>
         /// Gets the number of keys actually contained.
         /// </summary>
         public int Count
@@ -341,6 +352,58 @@ namespace Theraot.Threading
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
+        }
+
+        /// <summary>
+        /// Tries to retrieve the key and associated value at the specified index.
+        /// </summary>
+        /// <param name="index">The index.</param>
+        /// <param name="key">The key.</param>
+        /// <param name="value">The value.</param>
+        /// <returns>
+        ///   <c>true</c> if the value was retrieved; otherwise, <c>false</c>.
+        /// </returns>
+        public bool TryGet(int index, out TKey key, out TValue value)
+        {
+            value = default(TValue);
+            key = default(TKey);
+            bool result = false;
+            while (true)
+            {
+                bool done = false;
+                int revision = _revision;
+                if (IsOperationSafe() == 0)
+                {
+                    var entries = ThreadingHelper.VolatileRead(ref _entriesNew);
+                    try
+                    {
+                        TValue tmpValue;
+                        TKey tmpKey;
+                        if (TryGetExtracted(index, entries, out tmpKey, out tmpValue))
+                        {
+                            key = tmpKey;
+                            value = tmpValue;
+                            result = true;
+                        }
+                    }
+                    finally
+                    {
+                        var isOperationSafe = IsOperationSafe(entries, revision);
+                        if (isOperationSafe == 0)
+                        {
+                            done = true;
+                        }
+                    }
+                    if (done)
+                    {
+                        return result;
+                    }
+                }
+                else
+                {
+                    CooperativeGrow();
+                }
+            }
         }
 
         /// <summary>
@@ -603,6 +666,20 @@ namespace Theraot.Threading
                 }
             }
             return -1;
+        }
+
+        private bool TryGetExtracted(int index, FixedSizeHashBucket<TKey, TValue> entries, out TKey key, out TValue value)
+        {
+            value = default(TValue);
+            key = default(TKey);
+            if (entries != null)
+            {
+                if (entries.TryGet(index, out key, out value))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private bool TryGetValueExtracted(TKey key, FixedSizeHashBucket<TKey, TValue> entries, out TValue value)
