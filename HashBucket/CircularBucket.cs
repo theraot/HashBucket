@@ -34,9 +34,6 @@ namespace Theraot.Threading
         /// <summary>
         /// Gets the capacity.
         /// </summary>
-        /// <value>
-        /// The capacity.
-        /// </value>
         public int Capacity
         {
             get
@@ -48,9 +45,6 @@ namespace Theraot.Threading
         /// <summary>
         /// Gets the number of items that has been added.
         /// </summary>
-        /// <value>
-        /// The count.
-        /// </value>
         public int Count
         {
             get
@@ -113,6 +107,17 @@ namespace Theraot.Threading
         public bool TryGet(int index, out T value)
         {
             return _bucket.TryGet(index, out value);
+        }
+
+        /// <summary>
+        /// Gets the values contained in this object.
+        /// </summary>
+        public IList<T> Values
+        {
+            get
+            {
+                return _bucket.Values;
+            }
         }
     }
 }

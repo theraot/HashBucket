@@ -369,5 +369,32 @@ namespace Theraot.Threading
             isNew = Interlocked.Exchange(ref _entries[index], item ?? _null) == null;
             return true;
         }
+
+        /// <summary>
+        /// Gets the values contained in this object.
+        /// </summary>
+        public IList<T> Values
+        {
+            get
+            {
+                var result = new List<T>();
+                for (int index = 0; index < _entries.Length; index++)
+                {
+                    var entry = Interlocked.CompareExchange(ref _entries[index], null, null);
+                    if (entry != null)
+                    {
+                        if (entry == _null)
+                        {
+                            result.Add(default(T));
+                        }
+                        else
+                        {
+                            result.Add((T)entry);
+                        }
+                    }
+                }
+                return result;
+            }
+        }
     }
 }

@@ -327,5 +327,16 @@ namespace Theraot.Threading
                 return -1;
             }
         }
+
+        /// <summary>
+        /// Gets the values contained in this object.
+        /// </summary>
+        public IList<KeyValuePair<TKey, TValue>> Values
+        {
+            get
+            {
+                return _entries.Values;
+            }
+        }
     }
 }
