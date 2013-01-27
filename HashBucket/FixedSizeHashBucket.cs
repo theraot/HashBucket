@@ -19,7 +19,7 @@ namespace Theraot.Threading
         /// <summary>
         /// Initializes a new instance of the <see cref="FixedSizeHashBucket" /> class.
         /// </summary>
-        /// <param name="capacity">The initial capacity.</param>
+        /// <param name="capacity">The capacity.</param>
         /// <param name="keyComparer">The key comparer.</param>
         public FixedSizeHashBucket(int capacity, IEqualityComparer<TKey> keyComparer)
         {

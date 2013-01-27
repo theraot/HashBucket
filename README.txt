@@ -1,8 +1,10 @@
 This software library for .NET 2.0 includes:
+
 Bucket: Wait-free fixed size collection.
 CircularBucket: Wait-free fixed size circular collection.
 HashBucket: Lock-free hash table.
-HashBucket.FixedSizeHashBucket: Wait-free fixed size hash table.
+FixedSizeHashBucket: Wait-free fixed size hash table.
+FixedSizeDeque: Wait-free fixed size deque (double queue).
 
 This software is free software: you can redistribute it or modify it under the terms of the GNU General Public License published by the Free Software Fundation at https://www.gnu.org/licenses/gpl.html either version 3 of the License, or (at your option) any later version. Any other license should be explicitly negotiated before using.
 
