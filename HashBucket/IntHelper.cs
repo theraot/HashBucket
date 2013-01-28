@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Theraot.Threading
+﻿namespace Theraot.Threading
 {
     internal static class IntHelper
     {

@@ -114,8 +114,6 @@ namespace Theraot.Threading
             }
         }
 
-        private delegate bool Operation();
-
         /// <summary>
         /// Gets the capacity.
         /// </summary>
@@ -135,6 +133,17 @@ namespace Theraot.Threading
             get
             {
                 return _count;
+            }
+        }
+
+        /// <summary>
+        /// Gets the keys and associated values contained in this object.
+        /// </summary>
+        public IList<KeyValuePair<TKey, TValue>> Values
+        {
+            get
+            {
+                return _entriesNew.Values;
             }
         }
 
@@ -696,17 +705,6 @@ namespace Theraot.Threading
                 }
             }
             return false;
-        }
-
-        /// <summary>
-        /// Gets the keys and associated values contained in this object.
-        /// </summary>
-        public IList<KeyValuePair<TKey, TValue>> Values
-        {
-            get
-            {
-                return _entriesNew.Values;
-            }
         }
 
         // This class will not shrink, the reason for this is that shrinking may fail, supporting it may require to add locks. [Not solved problem]

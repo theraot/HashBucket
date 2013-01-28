@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Text;
+﻿using System.Collections.Generic;
 using System.Threading;
 
 namespace Theraot.Threading
@@ -50,6 +47,17 @@ namespace Theraot.Threading
             get
             {
                 return _bucket.Count;
+            }
+        }
+
+        /// <summary>
+        /// Gets the values contained in this object.
+        /// </summary>
+        public IList<T> Values
+        {
+            get
+            {
+                return _bucket.Values;
             }
         }
 
@@ -107,17 +115,6 @@ namespace Theraot.Threading
         public bool TryGet(int index, out T value)
         {
             return _bucket.TryGet(index, out value);
-        }
-
-        /// <summary>
-        /// Gets the values contained in this object.
-        /// </summary>
-        public IList<T> Values
-        {
-            get
-            {
-                return _bucket.Values;
-            }
         }
     }
 }

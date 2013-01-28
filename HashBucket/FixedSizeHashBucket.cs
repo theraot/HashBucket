@@ -1,14 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Threading;
+﻿using System.Collections.Generic;
 
 namespace Theraot.Threading
 {
     /// <summary>
     /// Represent a fixed size thread-safe wait-free hash based dictionary.
     /// </summary>
+    /// <typeparam name="TKey">The type of the key.</typeparam>
+    /// <typeparam name="TValue">The type of the value.</typeparam>
     public class FixedSizeHashBucket<TKey, TValue>
     {
         private readonly int _capacity;
@@ -47,6 +45,17 @@ namespace Theraot.Threading
             get
             {
                 return _entries.Count;
+            }
+        }
+
+        /// <summary>
+        /// Gets the values contained in this object.
+        /// </summary>
+        public IList<KeyValuePair<TKey, TValue>> Values
+        {
+            get
+            {
+                return _entries.Values;
             }
         }
 
@@ -325,17 +334,6 @@ namespace Theraot.Threading
             {
                 value = default(TValue);
                 return -1;
-            }
-        }
-
-        /// <summary>
-        /// Gets the values contained in this object.
-        /// </summary>
-        public IList<KeyValuePair<TKey, TValue>> Values
-        {
-            get
-            {
-                return _entries.Values;
             }
         }
     }
