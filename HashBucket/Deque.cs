@@ -15,7 +15,6 @@ namespace Threaot.Threading
         private const int INT_SpinWaitHint = 80;
 
         private int _copyingThreads;
-        private int _copyPosition;
         private int _count;
         private FixedSizeDeque<T> _entriesNew;
         private FixedSizeDeque<T> _entriesOld;
@@ -444,7 +443,6 @@ namespace Threaot.Threading
                             try
                             {
                                 Thread.CurrentThread.Priority = ThreadPriority.Highest;
-                                Thread.VolatileWrite(ref _copyPosition, -1);
                                 var newCapacity = _entriesNew.Capacity * 2;
                                 _entriesOld = Interlocked.Exchange(ref _entriesNew, new FixedSizeDeque<T>(newCapacity));
                                 oldStatus = Interlocked.CompareExchange(ref _status, 3, 2);
@@ -468,13 +466,9 @@ namespace Threaot.Threading
                             _revision++;
                             Interlocked.Increment(ref _copyingThreads);
                             T item;
-                            int index = Interlocked.Increment(ref _copyPosition);
-                            for (; index < old.Capacity; index = Interlocked.Increment(ref _copyPosition))
+                            while (old.TryTakeFront(out item))
                             {
-                                if (old.TryGet(index, out item))
-                                {
-                                    AddFront(item);
-                                }
+                                AddFront(item);
                             }
                             _revision++;
                             oldStatus = Interlocked.CompareExchange(ref _status, 4, 3);
