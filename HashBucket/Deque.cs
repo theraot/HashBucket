@@ -282,6 +282,57 @@ namespace Threaot.Threading
         }
 
         /// <summary>
+        /// Tries the retrieve the item at an specified index.
+        /// </summary>
+        /// <param name="index">The index.</param>
+        /// <param name="item">The item.</param>
+        /// <returns>
+        ///   <c>true</c> if the value was retrieved; otherwise, <c>false</c>.
+        /// </returns>
+        /// <remarks>
+        /// Although items are ordered, they are not guaranteed to start at index 0.
+        /// </remarks>
+        public bool TryGet(int index, out T item)
+        {
+            item = default(T);
+            bool result = false;
+            while (true)
+            {
+                bool done = false;
+                int revision = _revision;
+                if (IsOperationSafe() == 0)
+                {
+                    var entries = ThreadingHelper.VolatileRead(ref _entriesNew);
+                    try
+                    {
+                        T tmpItem;
+                        if (entries.TryGet(index, out tmpItem))
+                        {
+                            item = tmpItem;
+                            result = true;
+                        }
+                    }
+                    finally
+                    {
+                        var isOperationSafe = IsOperationSafe(entries, revision);
+                        if (isOperationSafe == 0)
+                        {
+                            done = true;
+                        }
+                    }
+                    if (done)
+                    {
+                        return result;
+                    }
+                }
+                else
+                {
+                    CooperativeGrow();
+                }
+            }
+        }
+
+        /// <summary>
         /// Attempts to retrieve and remove the next item from the back.
         /// </summary>
         /// <param name="item">The item.</param>
