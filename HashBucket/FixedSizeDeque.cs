@@ -8,9 +8,9 @@ namespace Theraot.Threading
     /// </summary>
     public class FixedSizeDeque<T> : IEnumerable<T>
     {
+        private readonly Bucket<T> _bucket;
         private readonly int _capacity;
 
-        private Bucket<T> _bucket;
         private int _indexBack;
         private int _indexFront;
         private int _preCount;
@@ -47,6 +47,42 @@ namespace Theraot.Threading
             get
             {
                 return _bucket.Count;
+            }
+        }
+
+        /// <summary>
+        /// Gets the index where the last item added with AddBack was placed.
+        /// </summary>
+        /// <remarks>IndexBack decreases each time a new item is added with AddBack.</remarks>
+        public int IndexBack
+        {
+            get
+            {
+                return (Thread.VolatileRead(ref _indexBack) + 1) & (_capacity - 1);
+            }
+
+            //HACK
+            internal set
+            {
+                _indexBack = value & (_capacity - 1);
+            }
+        }
+
+        /// <summary>
+        /// Gets the index where the last item added with AddFront was placed.
+        /// </summary>
+        /// <remarks>IndexBack increases each time a new item is added with AddFront.</remarks>
+        public int IndexFront
+        {
+            get
+            {
+                return (Thread.VolatileRead(ref _indexFront) - 1) & (_capacity - 1);
+            }
+
+            //HACK
+            internal set
+            {
+                _indexFront = value & (_capacity - 1);
             }
         }
 
@@ -219,6 +255,23 @@ namespace Theraot.Threading
             if (_bucket.RemoveAt(index, out item))
             {
                 Interlocked.Decrement(ref _preCount);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        //HACK
+        internal bool Set(int index, T item, out bool isNew)
+        {
+            if (_bucket.Set(index, item, out isNew))
+            {
+                if (isNew)
+                {
+                    Interlocked.Increment(ref _preCount);
+                }
                 return true;
             }
             else

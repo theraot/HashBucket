@@ -560,8 +560,8 @@ namespace Theraot.Threading
                                     }
                                 }
                             }
-                            _revision++;
                             oldStatus = Interlocked.CompareExchange(ref _status, 4, 3);
+                            _revision++;
                             Interlocked.Decrement(ref _copyingThreads);
                         }
                         break;

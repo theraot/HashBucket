@@ -1,9 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
 
-using Theraot.Threading;
-
-namespace Threaot.Threading
+namespace Theraot.Threading
 {
     /// <summary>
     /// Represent a thread-safe lock-free deque.
@@ -468,16 +466,27 @@ namespace Threaot.Threading
                             _revision++;
                             Interlocked.Increment(ref _copyingThreads);
                             T item;
+
+                            var indexBack = old.IndexBack;
+                            int capacity = old.Capacity;
+
                             int index = Interlocked.Increment(ref _copyPosition);
-                            for (; index < old.Capacity; index = Interlocked.Increment(ref _copyPosition))
+                            for (; index < capacity; index = Interlocked.Increment(ref _copyPosition))
                             {
-                                if (old.TryGet(index, out item))
+                                bool dummy;
+                                if (old.TryGet((index + indexBack) & (capacity - 1), out item))
                                 {
-                                    AddFront(item);
+                                    //HACK
+                                    _entriesNew.Set(index, item, out dummy);
                                 }
                             }
-                            _revision++;
                             oldStatus = Interlocked.CompareExchange(ref _status, 4, 3);
+                            if (oldStatus == 3)
+                            {
+                                //HACK
+                                _entriesNew.IndexFront = index;
+                            }
+                            _revision++;
                             Interlocked.Decrement(ref _copyingThreads);
                         }
                         break;
