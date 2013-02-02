@@ -1,12 +1,13 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
+using Theraot.Core;
 
 namespace Theraot.Threading
 {
     /// <summary>
     /// Represent a fixed size thread-safe wait-free deque.
     /// </summary>
-    public class FixedSizeDeque<T> : IEnumerable<T>
+    public sealed class FixedSizeDeque<T> : IEnumerable<T>
     {
         private readonly Bucket<T> _bucket;
         private readonly int _capacity;

@@ -12,7 +12,7 @@ namespace Theraot.Threading
     /// <remarks>
     /// Consider wrapping this class to implement <see cref="IDictionary{TKey, TValue}" /> or any other desired interface.
     /// </remarks>
-    public partial class HashBucket<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
+    public sealed class HashBucket<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
     {
         private const int INT_DefaultCapacity = 64;
         private const int INT_DefaultMaxProbing = 1;
