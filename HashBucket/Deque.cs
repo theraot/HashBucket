@@ -7,7 +7,7 @@ namespace Theraot.Threading
     /// Represent a thread-safe lock-free deque.
     /// </summary>
     /// <typeparam name="T">The type of the item.</typeparam>
-    public class Deque<T>
+    public sealed class Deque<T>
     {
         private const int INT_DefaultCapacity = 64;
         private const int INT_SpinWaitHint = 80;

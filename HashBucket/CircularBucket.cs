@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
+using Theraot.Core;
 
 namespace Theraot.Threading
 {
@@ -10,7 +11,7 @@ namespace Theraot.Threading
     /// <remarks>
     /// The items added an instance of this type will be overwritten after the entry point reaches the end of the bucket. This class was created for the purpose of storing in-memory logs for debugging threaded software.
     /// </remarks>
-    public class CircularBucket<T> : IEnumerable<T>
+    public sealed class CircularBucket<T> : IEnumerable<T>
     {
         private readonly Bucket<T> _bucket;
         private readonly int _capacity;

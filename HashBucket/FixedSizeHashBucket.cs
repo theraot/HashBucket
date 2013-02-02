@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Theraot.Core;
 
 namespace Theraot.Threading
 {
@@ -7,7 +8,7 @@ namespace Theraot.Threading
     /// </summary>
     /// <typeparam name="TKey">The type of the key.</typeparam>
     /// <typeparam name="TValue">The type of the value.</typeparam>
-    public class FixedSizeHashBucket<TKey, TValue>
+    public sealed class FixedSizeHashBucket<TKey, TValue>
     {
         private readonly int _capacity;
         private readonly IEqualityComparer<TKey> _keyComparer;
