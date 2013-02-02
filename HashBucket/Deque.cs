@@ -73,7 +73,7 @@ namespace Theraot.Threading
         }
 
         /// <summary>
-        /// Attempts to Adds the specified item at the back.
+        /// Adds the specified item at the back.
         /// </summary>
         /// <param name="item">The item.</param>
         /// <returns>
@@ -129,7 +129,7 @@ namespace Theraot.Threading
         }
 
         /// <summary>
-        /// Attempts to Adds the specified item at the front.
+        /// Adds the specified item at the front.
         /// </summary>
         /// <param name="item">The item.</param>
         /// <returns>
