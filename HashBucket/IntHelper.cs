@@ -1,4 +1,4 @@
-﻿namespace Theraot.Threading
+﻿namespace Theraot.Core
 {
     internal static class IntHelper
     {
