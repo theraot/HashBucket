@@ -1,105 +1,104 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 
 namespace Theraot.Threading
 {
     /// <summary>
-    /// Represent a thread-safe lock-free hash based dictionary.
+    /// Represent a thread-safe lock-free hash based set.
     /// </summary>
-    /// <typeparam name="TKey">The type of the key.</typeparam>
-    /// <typeparam name="TValue">The type of the value.</typeparam>
+    /// <typeparam name="T">The type of the item.</typeparam>
     /// <remarks>
-    /// Consider wrapping this class to implement <see cref="IDictionary{TKey, TValue}" /> or any other desired interface.
+    /// Consider wrapping this class to implement <see cref="ISet{T}" /> or any other desired interface.
     /// </remarks>
-    public sealed class HashBucket<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
+    public sealed class SetBucket<T> : IEnumerable<T>
     {
         private const int INT_DefaultCapacity = 64;
         private const int INT_DefaultMaxProbing = 1;
         private const int INT_SpinWaitHint = 80;
 
+        private IEqualityComparer<T> _comparer;
         private int _copyingThreads;
         private int _copyPosition;
         private int _count;
-        private FixedSizeHashBucket<TKey, TValue> _entriesNew;
-        private FixedSizeHashBucket<TKey, TValue> _entriesOld;
-        private IEqualityComparer<TKey> _keyComparer;
+        private FixedSizeSetBucket<T> _entriesNew;
+        private FixedSizeSetBucket<T> _entriesOld;
         private int _maxProbing;
         private volatile int _revision;
         private int _status;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="HashBucket{TValue}" /> class.
+        /// Initializes a new instance of the <see cref="SetBucket{TValue}" /> class.
         /// </summary>
-        public HashBucket()
-            : this(INT_DefaultCapacity, EqualityComparer<TKey>.Default, INT_DefaultMaxProbing)
+        public SetBucket()
+            : this(INT_DefaultCapacity, EqualityComparer<T>.Default, INT_DefaultMaxProbing)
         {
             // Empty
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="HashBucket{TValue}" /> class.
+        /// Initializes a new instance of the <see cref="SetBucket{TValue}" /> class.
         /// </summary>
         /// <param name="capacity">The initial capacity.</param>
-        public HashBucket(int capacity)
-            : this(capacity, EqualityComparer<TKey>.Default, INT_DefaultMaxProbing)
+        public SetBucket(int capacity)
+            : this(capacity, EqualityComparer<T>.Default, INT_DefaultMaxProbing)
         {
             // Empty
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="HashBucket{TValue}" /> class.
+        /// Initializes a new instance of the <see cref="SetBucket{TValue}" /> class.
         /// </summary>
         /// <param name="capacity">The initial capacity.</param>
         /// <param name="maxProbing">The maximum number of steps in linear probing.</param>
         /// <exception cref="System.ArgumentOutOfRangeException">maxProbing;maxProbing must be greater or equal to 1 and less than capacity.</exception>
-        public HashBucket(int capacity, int maxProbing)
-            : this(capacity, EqualityComparer<TKey>.Default, maxProbing)
+        public SetBucket(int capacity, int maxProbing)
+            : this(capacity, EqualityComparer<T>.Default, maxProbing)
         {
             // Empty
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="HashBucket{TValue}" /> class.
+        /// Initializes a new instance of the <see cref="SetBucket{TValue}" /> class.
         /// </summary>
-        /// <param name="comparer">The key comparer.</param>
-        public HashBucket(IEqualityComparer<TKey> comparer)
+        /// <param name="comparer">The comparer.</param>
+        public SetBucket(IEqualityComparer<T> comparer)
             : this(INT_DefaultCapacity, comparer, INT_DefaultMaxProbing)
         {
             // Empty
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="HashBucket{TValue}" /> class.
+        /// Initializes a new instance of the <see cref="SetBucket{TValue}" /> class.
         /// </summary>
-        /// <param name="comparer">The key comparer.</param>
+        /// <param name="comparer">The comparer.</param>
         /// <param name="maxProbing">The maximum number of steps in linear probing.</param>
         /// <exception cref="System.ArgumentOutOfRangeException">maxProbing;maxProbing must be greater or equal to 1 and less than capacity.</exception>
-        public HashBucket(IEqualityComparer<TKey> comparer, int maxProbing)
+        public SetBucket(IEqualityComparer<T> comparer, int maxProbing)
             : this(INT_DefaultCapacity, comparer, maxProbing)
         {
             // Empty
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="HashBucket{TValue}" /> class.
+        /// Initializes a new instance of the <see cref="SetBucket{TValue}" /> class.
         /// </summary>
         /// <param name="capacity">The initial capacity.</param>
-        /// <param name="comparer">The key comparer.</param>
-        public HashBucket(int capacity, IEqualityComparer<TKey> comparer)
+        /// <param name="comparer">The comparer.</param>
+        public SetBucket(int capacity, IEqualityComparer<T> comparer)
             : this(capacity, comparer, INT_DefaultMaxProbing)
         {
             // Empty
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="HashBucket{TValue}" /> class.
+        /// Initializes a new instance of the <see cref="SetBucket{TValue}" /> class.
         /// </summary>
         /// <param name="capacity">The initial capacity.</param>
-        /// <param name="comparer">The key comparer.</param>
+        /// <param name="comparer">The comparer.</param>
         /// <param name="maxProbing">The maximum number of steps in linear probing.</param>
         /// <exception cref="System.ArgumentOutOfRangeException">maxProbing;maxProbing must be greater or equal to 1 and less than capacity.</exception>
-        public HashBucket(int capacity, IEqualityComparer<TKey> comparer, int maxProbing)
+        public SetBucket(int capacity, IEqualityComparer<T> comparer, int maxProbing)
         {
             if (maxProbing < 1 || maxProbing >= capacity)
             {
@@ -107,9 +106,9 @@ namespace Theraot.Threading
             }
             else
             {
-                _keyComparer = comparer ?? EqualityComparer<TKey>.Default;
+                _comparer = comparer ?? EqualityComparer<T>.Default;
                 _entriesOld = null;
-                _entriesNew = new FixedSizeHashBucket<TKey, TValue>(capacity, _keyComparer);
+                _entriesNew = new FixedSizeSetBucket<T>(capacity, _comparer);
                 _maxProbing = maxProbing;
             }
         }
@@ -125,8 +124,16 @@ namespace Theraot.Threading
             }
         }
 
+        public IEqualityComparer<T> Comparer
+        {
+            get
+            {
+                return _entriesNew.Comparer;
+            }
+        }
+
         /// <summary>
-        /// Gets the number of keys actually contained.
+        /// Gets the number of items actually contained.
         /// </summary>
         public int Count
         {
@@ -136,32 +143,23 @@ namespace Theraot.Threading
             }
         }
 
-        public IEqualityComparer<TKey> KeyComparer
+        /// <summary>
+        /// Gets the items and associated values contained in this object.
+        /// </summary>
+        public IList<T> Values
         {
             get
             {
-                return _entriesNew.KeyComparer;
+                return _entriesNew.Values;
             }
         }
 
         /// <summary>
-        /// Gets the keys and associated values contained in this object.
+        /// Adds the specified item.
         /// </summary>
-        public IList<KeyValuePair<TKey, TValue>> Pairs
-        {
-            get
-            {
-                return _entriesNew.Pairs;
-            }
-        }
-
-        /// <summary>
-        /// Adds the specified key and associated value.
-        /// </summary>
-        /// <param name="key">The key.</param>
-        /// <param name="value">The value.</param>
-        /// <exception cref="System.ArgumentException">the key is already present</exception>
-        public void Add(TKey key, TValue value)
+        /// <param name="item">The item.</param>
+        /// <exception cref="System.ArgumentException">the item is already present</exception>
+        public void Add(T item)
         {
             bool result = false;
             while (true)
@@ -174,7 +172,7 @@ namespace Theraot.Threading
                     var entries = ThreadingHelper.VolatileRead(ref _entriesNew);
                     try
                     {
-                        if (AddExtracted(key, value, entries, out isCollision) != -1)
+                        if (AddExtracted(item, entries, out isCollision) != -1)
                         {
                             result = true;
                         }
@@ -201,7 +199,7 @@ namespace Theraot.Threading
                                 }
                                 else
                                 {
-                                    throw new ArgumentException("the key is already present");
+                                    throw new ArgumentException("the item is already present");
                                 }
                             }
                         }
@@ -224,19 +222,19 @@ namespace Theraot.Threading
         public void Clear()
         {
             _entriesOld = null;
-            _entriesNew = new FixedSizeHashBucket<TKey, TValue>(INT_DefaultCapacity, _keyComparer);
+            _entriesNew = new FixedSizeSetBucket<T>(INT_DefaultCapacity, _comparer);
             Thread.VolatileWrite(ref _status, 0);
             _revision++;
         }
 
         /// <summary>
-        /// Determines whether the specified key is contained.
+        /// Determines whether the specified item is contained.
         /// </summary>
-        /// <param name="key">The key.</param>
+        /// <param name="item">The item.</param>
         /// <returns>
-        ///   <c>true</c> if the specified key is contained; otherwise, <c>false</c>.
+        ///   <c>true</c> if the specified item is contained; otherwise, <c>false</c>.
         /// </returns>
-        public bool ContainsKey(TKey key)
+        public bool Contains(T item)
         {
             bool result = false;
             while (true)
@@ -248,7 +246,7 @@ namespace Theraot.Threading
                     var entries = ThreadingHelper.VolatileRead(ref _entriesNew);
                     try
                     {
-                        if (ContainsKeyExtracted(key, entries))
+                        if (ContainsExtracted(item, entries))
                         {
                             result = true;
                         }
@@ -273,19 +271,19 @@ namespace Theraot.Threading
             }
         }
 
-        public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
+        public IEnumerator<T> GetEnumerator()
         {
-            return _entriesNew.GetKeyValuePairEnumerable().GetEnumerator();
+            return _entriesNew.GetEnumerable().GetEnumerator();
         }
 
         /// <summary>
-        /// Removes the specified key.
+        /// Removes the specified item.
         /// </summary>
-        /// <param name="key">The key.</param>
+        /// <param name="item">The item.</param>
         /// <returns>
-        ///   <c>true</c> if the specified key was removed; otherwise, <c>false</c>.
+        ///   <c>true</c> if the specified item was removed; otherwise, <c>false</c>.
         /// </returns>
-        public bool Remove(TKey key)
+        public bool Remove(T item)
         {
             bool result = false;
             while (true)
@@ -297,7 +295,7 @@ namespace Theraot.Threading
                     var entries = ThreadingHelper.VolatileRead(ref _entriesNew);
                     try
                     {
-                        if (RemoveExtracted(key, entries))
+                        if (RemoveExtracted(item, entries))
                         {
                             result = true;
                         }
@@ -326,65 +324,22 @@ namespace Theraot.Threading
             }
         }
 
-        /// <summary>
-        /// Sets the value associated with the specified key.
-        /// </summary>
-        /// <param name="key">The key.</param>
-        /// <param name="value">The value.</param>
-        public void Set(TKey key, TValue value)
-        {
-            while (true)
-            {
-                int revision = _revision;
-                if (IsOperationSafe() == 0)
-                {
-                    bool isNew;
-                    var entries = ThreadingHelper.VolatileRead(ref _entriesNew);
-                    if (SetExtracted(key, value, entries, out isNew) != -1)
-                    {
-                        if (IsOperationSafe(entries, revision) == 0)
-                        {
-                            if (isNew)
-                            {
-                                Interlocked.Increment(ref _count);
-                            }
-                            break;
-                        }
-                        else
-                        {
-                            int oldStatus = Interlocked.CompareExchange(ref _status, 1, 0);
-                            if (oldStatus == 0)
-                            {
-                                _revision++;
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    CooperativeGrow();
-                }
-            }
-        }
-
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
         }
 
         /// <summary>
-        /// Tries to retrieve the key and associated value at the specified index.
+        /// Tries to retrieve the item at the specified index.
         /// </summary>
         /// <param name="index">The index.</param>
-        /// <param name="key">The key.</param>
-        /// <param name="value">The value.</param>
+        /// <param name="item">The item.</param>
         /// <returns>
-        ///   <c>true</c> if the value was retrieved; otherwise, <c>false</c>.
+        ///   <c>true</c> if the item was retrieved; otherwise, <c>false</c>.
         /// </returns>
-        public bool TryGet(int index, out TKey key, out TValue value)
+        public bool TryGet(int index, out T item)
         {
-            value = default(TValue);
-            key = default(TKey);
+            item = default(T);
             bool result = false;
             while (true)
             {
@@ -395,12 +350,10 @@ namespace Theraot.Threading
                     var entries = ThreadingHelper.VolatileRead(ref _entriesNew);
                     try
                     {
-                        TValue tmpValue;
-                        TKey tmpKey;
-                        if (TryGetExtracted(index, entries, out tmpKey, out tmpValue))
+                        T tmpItem;
+                        if (TryGetExtracted(index, entries, out tmpItem))
                         {
-                            key = tmpKey;
-                            value = tmpValue;
+                            item = tmpItem;
                             result = true;
                         }
                     }
@@ -424,62 +377,14 @@ namespace Theraot.Threading
             }
         }
 
-        /// <summary>
-        /// Tries to retrieve the value associated with the specified key.
-        /// </summary>
-        /// <param name="key">The key.</param>
-        /// <param name="value">The value.</param>
-        /// <returns>
-        ///   <c>true</c> if the value was retrieved; otherwise, <c>false</c>.
-        /// </returns>
-        public bool TryGetValue(TKey key, out TValue value)
-        {
-            value = default(TValue);
-            bool result = false;
-            while (true)
-            {
-                bool done = false;
-                int revision = _revision;
-                if (IsOperationSafe() == 0)
-                {
-                    var entries = ThreadingHelper.VolatileRead(ref _entriesNew);
-                    try
-                    {
-                        TValue tmpValue;
-                        if (TryGetValueExtracted(key, entries, out tmpValue))
-                        {
-                            value = tmpValue;
-                            result = true;
-                        }
-                    }
-                    finally
-                    {
-                        var isOperationSafe = IsOperationSafe(entries, revision);
-                        if (isOperationSafe == 0)
-                        {
-                            done = true;
-                        }
-                    }
-                    if (done)
-                    {
-                        return result;
-                    }
-                }
-                else
-                {
-                    CooperativeGrow();
-                }
-            }
-        }
-
-        private int AddExtracted(TKey key, TValue value, FixedSizeHashBucket<TKey, TValue> entries, out bool isCollision)
+        private int AddExtracted(T item, FixedSizeSetBucket<T> entries, out bool isCollision)
         {
             isCollision = true;
             if (entries != null)
             {
                 for (int attempts = 0; attempts < _maxProbing; attempts++)
                 {
-                    int index = entries.Add(key, value, attempts, out isCollision);
+                    int index = entries.Add(item, attempts, out isCollision);
                     if (index != -1 || !isCollision)
                     {
                         return index;
@@ -489,11 +394,11 @@ namespace Theraot.Threading
             return -1;
         }
 
-        private bool ContainsKeyExtracted(TKey key, FixedSizeHashBucket<TKey, TValue> entries)
+        private bool ContainsExtracted(T item, FixedSizeSetBucket<T> entries)
         {
             for (int attempts = 0; attempts < _maxProbing; attempts++)
             {
-                if (entries.ContainsKey(key, attempts) != -1)
+                if (entries.Contains(item, attempts) != -1)
                 {
                     return true;
                 }
@@ -524,7 +429,7 @@ namespace Theraot.Threading
                                 Thread.CurrentThread.Priority = ThreadPriority.Highest;
                                 Thread.VolatileWrite(ref _copyPosition, -1);
                                 var newCapacity = _entriesNew.Capacity * 2;
-                                _entriesOld = Interlocked.Exchange(ref _entriesNew, new FixedSizeHashBucket<TKey, TValue>(newCapacity, _keyComparer));
+                                _entriesOld = Interlocked.Exchange(ref _entriesNew, new FixedSizeSetBucket<T>(newCapacity, _comparer));
                                 oldStatus = Interlocked.CompareExchange(ref _status, 3, 2);
                             }
                             finally
@@ -554,16 +459,17 @@ namespace Theraot.Threading
                             // This class is not abort safe, aside from a thread being aborted here (causing lost items) a thread being aborted on status == 1 will mean a livelock
                             _revision++;
                             Interlocked.Increment(ref _copyingThreads);
-                            TKey key;
-                            TValue value;
+                            T item;
                             int index = Interlocked.Increment(ref _copyPosition);
                             for (; index < old.Capacity; index = Interlocked.Increment(ref _copyPosition))
                             {
-                                if (old.TryGet(index, out key, out value))
+                                if (old.TryGet(index, out item))
                                 {
                                     // We have read an item, so let's try to add it to the new storage
                                     bool dummy;
-                                    if (SetExtracted(key, value, _entriesNew, out dummy) == -1)
+
+                                    //HACK
+                                    if (SetExtracted(item, _entriesNew, out dummy) == -1)
                                     {
                                         GC.KeepAlive(dummy);
                                     }
@@ -594,7 +500,7 @@ namespace Theraot.Threading
             while (status != 0);
         }
 
-        private int IsOperationSafe(FixedSizeHashBucket<TKey, TValue> entries, int revision)
+        private int IsOperationSafe(FixedSizeSetBucket<T> entries, int revision)
         {
             int result = 5;
             bool check = _revision != revision;
@@ -654,13 +560,13 @@ namespace Theraot.Threading
             }
         }
 
-        private bool RemoveExtracted(TKey key, FixedSizeHashBucket<TKey, TValue> entries)
+        private bool RemoveExtracted(T item, FixedSizeSetBucket<T> entries)
         {
             if (entries != null)
             {
                 for (int attempts = 0; attempts < _maxProbing; attempts++)
                 {
-                    if (entries.Remove(key, attempts) != -1)
+                    if (entries.Remove(item, attempts) != -1)
                     {
                         return true;
                     }
@@ -669,14 +575,15 @@ namespace Theraot.Threading
             return false;
         }
 
-        private int SetExtracted(TKey key, TValue value, FixedSizeHashBucket<TKey, TValue> entries, out bool isNew)
+        //HACK
+        private int SetExtracted(T item, FixedSizeSetBucket<T> entries, out bool isNew)
         {
             isNew = false;
             if (entries != null)
             {
                 for (int attempts = 0; attempts < _maxProbing; attempts++)
                 {
-                    int index = entries.Set(key, value, attempts, out isNew);
+                    int index = entries.Set(item, attempts, out isNew);
                     if (index != -1)
                     {
                         return index;
@@ -686,31 +593,14 @@ namespace Theraot.Threading
             return -1;
         }
 
-        private bool TryGetExtracted(int index, FixedSizeHashBucket<TKey, TValue> entries, out TKey key, out TValue value)
+        private bool TryGetExtracted(int index, FixedSizeSetBucket<T> entries, out T item)
         {
-            value = default(TValue);
-            key = default(TKey);
+            item = default(T);
             if (entries != null)
             {
-                if (entries.TryGet(index, out key, out value))
+                if (entries.TryGet(index, out item))
                 {
                     return true;
-                }
-            }
-            return false;
-        }
-
-        private bool TryGetValueExtracted(TKey key, FixedSizeHashBucket<TKey, TValue> entries, out TValue value)
-        {
-            value = default(TValue);
-            if (entries != null)
-            {
-                for (int attempts = 0; attempts < _maxProbing; attempts++)
-                {
-                    if (entries.TryGetValue(key, attempts, out value) != -1)
-                    {
-                        return true;
-                    }
                 }
             }
             return false;

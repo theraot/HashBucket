@@ -49,10 +49,18 @@ namespace Theraot.Threading
             }
         }
 
+        public IEqualityComparer<TKey> KeyComparer
+        {
+            get
+            {
+                return _keyComparer;
+            }
+        }
+
         /// <summary>
         /// Gets the values contained in this object.
         /// </summary>
-        public IList<KeyValuePair<TKey, TValue>> Values
+        public IList<KeyValuePair<TKey, TValue>> Pairs
         {
             get
             {
@@ -101,7 +109,7 @@ namespace Theraot.Threading
         /// Determines whether the specified key is contained at the default index.
         /// </summary>
         /// <param name="key">The key.</param>
-        /// <returns>The index where the value was set; -1 otherwise.</returns>
+        /// <returns>The index where the key is set; -1 otherwise.</returns>
         public int ContainsKey(TKey key)
         {
             return ContainsKey(key, 0);
@@ -112,7 +120,7 @@ namespace Theraot.Threading
         /// </summary>
         /// <param name="key">The key.</param>
         /// <param name="offset">The offset from the default index.</param>
-        /// <returns>The index where the value was set; -1 otherwise.</returns>
+        /// <returns>The index where the key is set; -1 otherwise.</returns>
         public int ContainsKey(TKey key, int offset)
         {
             int index = Index(key, offset);
