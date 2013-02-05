@@ -1,8 +1,9 @@
 This software library for .NET 2.0 includes:
 
-Bucket: Wait-free fixed size collection.
+Bucket: Wait-free fixed size collection (array).
+LazyBucket: Wait-free fixed size lazy collection (array).
 
-CircularBucket: Wait-free fixed size circular collection.
+CircularBucket: Wait-free fixed size circular collection (array).
 
 HashBucket: Lock-free hash table.
 FixedSizeHashBucket: Wait-free fixed size (limited capacity) hash table.
