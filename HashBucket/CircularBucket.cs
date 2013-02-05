@@ -7,7 +7,7 @@ namespace Theraot.Threading
     /// <summary>
     /// Represents a thread-safe wait-free fixed size circular bucket.
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="T">The type of the item</typeparam>
     /// <remarks>
     /// The items added an instance of this type will be overwritten after the entry point reaches the end of the bucket. This class was created for the purpose of storing in-memory logs for debugging threaded software.
     /// </remarks>

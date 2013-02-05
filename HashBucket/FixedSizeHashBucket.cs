@@ -324,7 +324,7 @@ namespace Theraot.Threading
         }
 
         /// <summary>
-        /// Tries the retrieve the value associeted with the specified key at the default index.
+        /// Tries the retrieve the value associated with the specified key at the default index.
         /// </summary>
         /// <param name="key">The key.</param>
         /// <param name="value">The value.</param>
@@ -335,7 +335,7 @@ namespace Theraot.Threading
         }
 
         /// <summary>
-        /// Tries the retrieve the value associeted with the specified key.
+        /// Tries the retrieve the value associated with the specified key.
         /// </summary>
         /// <param name="key">The key.</param>
         /// <param name="offset">The offset from the default index.</param>
