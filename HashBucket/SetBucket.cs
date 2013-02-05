@@ -124,6 +124,9 @@ namespace Theraot.Threading
             }
         }
 
+        /// <summary>
+        /// Gets the item comparer.
+        /// </summary>
         public IEqualityComparer<T> Comparer
         {
             get
@@ -271,6 +274,12 @@ namespace Theraot.Threading
             }
         }
 
+        /// <summary>
+        /// Returns an <see cref="System.Collections.Generic.IEnumerator{T}" /> that allows to iterate through the collection.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.Collections.Generic.IEnumerator{T}" /> that can be used to iterate through the collection.
+        /// </returns>
         public IEnumerator<T> GetEnumerator()
         {
             return _entriesNew.GetEnumerable().GetEnumerator();

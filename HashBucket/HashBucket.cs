@@ -136,6 +136,9 @@ namespace Theraot.Threading
             }
         }
 
+        /// <summary>
+        /// Gets the key comparer.
+        /// </summary>
         public IEqualityComparer<TKey> KeyComparer
         {
             get
@@ -273,6 +276,12 @@ namespace Theraot.Threading
             }
         }
 
+        /// <summary>
+        /// Returns an <see cref="System.Collections.Generic.IEnumerator{T}" /> that allows to iterate through the collection.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="T:System.Collections.Generic.IEnumerator`1" /> that can be used to iterate through the collection.
+        /// </returns>
         public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
         {
             return _entriesNew.GetKeyValuePairEnumerable().GetEnumerator();

@@ -7,7 +7,7 @@ namespace Theraot.Threading
     /// Represent a fixed size thread-safe wait-free hash based set.
     /// </summary>
     /// <typeparam name="T">The type of the item.</typeparam>
-    public sealed class FixedSizeSetBucket<T>
+    public sealed class FixedSizeSetBucket<T> : IEnumerable<T>
     {
         private readonly int _capacity;
         private readonly IEqualityComparer<T> _comparer;
@@ -37,6 +37,9 @@ namespace Theraot.Threading
             }
         }
 
+        /// <summary>
+        /// Gets the comparer.
+        /// </summary>
         public IEqualityComparer<T> Comparer
         {
             get
@@ -154,6 +157,17 @@ namespace Theraot.Threading
         }
 
         /// <summary>
+        /// Returns an enumerator that iterates through the collection.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="T:System.Collections.Generic.IEnumerator`1" /> that can be used to iterate through the collection.
+        /// </returns>
+        public IEnumerator<T> GetEnumerator()
+        {
+            return GetEnumerable().GetEnumerator();
+        }
+
+        /// <summary>
         /// Determinates the index for a given item.
         /// </summary>
         /// <param name="item">The item.</param>
@@ -207,6 +221,11 @@ namespace Theraot.Threading
             {
                 return -1;
             }
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
         }
 
         /// <summary>

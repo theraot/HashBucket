@@ -7,7 +7,7 @@ namespace Theraot.Threading
     /// Represent a thread-safe lock-free deque.
     /// </summary>
     /// <typeparam name="T">The type of the item.</typeparam>
-    public sealed class Deque<T>
+    public sealed class Deque<T> : IEnumerable<T>
     {
         private const int INT_DefaultCapacity = 64;
         private const int INT_SpinWaitHint = 80;
@@ -195,8 +195,11 @@ namespace Theraot.Threading
         }
 
         /// <summary>
-        /// Gets the an <see cref="IEnumerable{T}" /> that allows to iterate over the contained items.
+        /// Returns an <see cref="System.Collections.Generic.IEnumerator{T}" /> that allows to iterate through the collection.
         /// </summary>
+        /// <returns>
+        /// An <see cref="T:System.Collections.IEnumerator{T}" /> object that can be used to iterate through the collection.
+        /// </returns>
         public IEnumerator<T> GetEnumerator()
         {
             return _entriesNew.GetEnumerator();
@@ -205,7 +208,6 @@ namespace Theraot.Threading
         /// <summary>
         /// Returns the next item to be taken from the back without removing it.
         /// </summary>
-        /// <returns></returns>
         /// <exception cref="System.InvalidOperationException">No more items to be taken.</exception>
         public T PeekBack(T item)
         {
@@ -244,7 +246,6 @@ namespace Theraot.Threading
         /// <summary>
         /// Returns the next item to be taken from the front without removing it.
         /// </summary>
-        /// <returns></returns>
         /// <exception cref="System.InvalidOperationException">No more items to be taken.</exception>
         public T PeekFront(T item)
         {
@@ -278,6 +279,11 @@ namespace Theraot.Threading
                     CooperativeGrow();
                 }
             }
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
         }
 
         /// <summary>

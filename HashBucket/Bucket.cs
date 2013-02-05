@@ -132,7 +132,7 @@ namespace Theraot.Threading
         }
 
         /// <summary>
-        /// Returns an enumerator that iterates through a collection.
+        /// Returns an <see cref="System.Collections.Generic.IEnumerator{T}" /> that allows to iterate through the collection.
         /// </summary>
         /// <returns>
         /// An <see cref="T:System.Collections.IEnumerator{T}" /> object that can be used to iterate through the collection.

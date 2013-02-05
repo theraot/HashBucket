@@ -76,7 +76,7 @@ namespace Theraot.Threading
         }
 
         /// <summary>
-        /// Returns an enumerator that iterates through a collection.
+        /// Returns an <see cref="System.Collections.Generic.IEnumerator{T}" /> that allows to iterate through the collection.
         /// </summary>
         /// <returns>
         /// An <see cref="T:System.Collections.IEnumerator{T}" /> object that can be used to iterate through the collection.
@@ -112,7 +112,7 @@ namespace Theraot.Threading
         /// <returns>
         ///   <c>true</c> if the item was retrieved; otherwise, <c>false</c>.
         /// </returns>
-        /// /// <exception cref="System.ArgumentOutOfRangeException">index;index must be greater or equal to 0 and less than capacity</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException">index;index must be greater or equal to 0 and less than capacity</exception>
         public bool TryGet(int index, out T value)
         {
             return _bucket.TryGet(index, out value);

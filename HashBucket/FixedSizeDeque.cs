@@ -156,8 +156,11 @@ namespace Theraot.Threading
         }
 
         /// <summary>
-        /// Gets the an <see cref="IEnumerable{T}" /> that allows to iterate over the contained items.
+        /// Returns an <see cref="System.Collections.Generic.IEnumerator{T}" /> that allows to iterate through the collection.
         /// </summary>
+        /// <returns>
+        /// A <see cref="System.Collections.Generic.IEnumerator{T}" /> that can be used to iterate through the collection.
+        /// </returns>
         public IEnumerator<T> GetEnumerator()
         {
             return _bucket.GetEnumerator();
@@ -166,7 +169,6 @@ namespace Theraot.Threading
         /// <summary>
         /// Returns the next item to be taken from the back without removing it.
         /// </summary>
-        /// <returns></returns>
         /// <exception cref="System.InvalidOperationException">No more items to be taken.</exception>
         public T PeekBack()
         {
@@ -185,7 +187,6 @@ namespace Theraot.Threading
         /// <summary>
         /// Returns the next item to be taken from the front without removing it.
         /// </summary>
-        /// <returns></returns>
         /// <exception cref="System.InvalidOperationException">No more items to be taken.</exception>
         public T PeekFront()
         {

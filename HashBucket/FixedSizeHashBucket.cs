@@ -8,7 +8,7 @@ namespace Theraot.Threading
     /// </summary>
     /// <typeparam name="TKey">The type of the key.</typeparam>
     /// <typeparam name="TValue">The type of the value.</typeparam>
-    public sealed class FixedSizeHashBucket<TKey, TValue>
+    public sealed class FixedSizeHashBucket<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
     {
         private readonly int _capacity;
         private readonly IEqualityComparer<TKey> _keyComparer;
@@ -49,6 +49,9 @@ namespace Theraot.Threading
             }
         }
 
+        /// <summary>
+        /// Gets the key comparer.
+        /// </summary>
         public IEqualityComparer<TKey> KeyComparer
         {
             get
@@ -140,6 +143,17 @@ namespace Theraot.Threading
             {
                 return -1;
             }
+        }
+
+        /// <summary>
+        /// Returns an <see cref="System.Collections.Generic.IEnumerator{System.Collections.Generic.KeyValuePair{TKey, TValue}}" /> that allows to iterate through the collection.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="System.Collections.Generic.IEnumerator{System.Collections.Generic.KeyValuePair{TKey, TValue}}" /> that can be used to iterate through the collection.
+        /// </returns>
+        public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
+        {
+            return GetKeyValuePairEnumerable().GetEnumerator();
         }
 
         /// <summary>
@@ -276,6 +290,11 @@ namespace Theraot.Threading
         public int Set(TKey key, TValue value, out bool isNew)
         {
             return Set(key, value, 0, out isNew);
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
         }
 
         /// <summary>
