@@ -11,7 +11,7 @@ Deque: Lock-free deque (double queue).
 FixedSizeDeque: Wait-free fixed size (limited capacity) deque (double queue).
 
 SetBucket: Lock-free set.
-FixedSizeSetBucket: Wait-free fixed size (limited capacity) set
+FixedSizeSetBucket: Wait-free fixed size (limited capacity) set.
 
 ---
 
