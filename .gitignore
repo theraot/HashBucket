@@ -28,6 +28,12 @@ local.properties
 # PDT-specific
 .buildpath
 
+#################
+## MonoDevelop
+#################
+
+# User-specific files
+*.userprefs
 
 #################
 ## Visual Studio
