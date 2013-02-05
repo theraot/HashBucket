@@ -5,10 +5,13 @@ Bucket: Wait-free fixed size collection.
 CircularBucket: Wait-free fixed size circular collection.
 
 HashBucket: Lock-free hash table.
-FixedSizeHashBucket: Wait-free fixed size hash table.
+FixedSizeHashBucket: Wait-free fixed size (limited capacity) hash table.
 
 Deque: Lock-free deque (double queue).
-FixedSizeDeque: Wait-free fixed size deque (double queue).
+FixedSizeDeque: Wait-free fixed size (limited capacity) deque (double queue).
+
+SetBucket: Lock-free set.
+FixedSizeSetBucket: Wait-free fixed size (limited capacity) set
 
 ---
 
