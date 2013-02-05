@@ -1,5 +1,5 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 12.00
+Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HashBucket", "HashBucket\HashBucket.csproj", "{98A7EAEE-6152-4338-9BB9-957FFAF7837C}"
 EndProject
