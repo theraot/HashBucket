@@ -14,7 +14,6 @@ namespace Theraot.Threading
 
         private int _copyingThreads;
         private int _copyPosition;
-        private int _count;
         private FixedSizeDeque<T> _entriesNew;
         private FixedSizeDeque<T> _entriesOld;
         private volatile int _revision;
@@ -57,7 +56,7 @@ namespace Theraot.Threading
         {
             get
             {
-                return _count;
+                return _entriesNew.Count;
             }
         }
 
@@ -103,7 +102,6 @@ namespace Theraot.Threading
                         {
                             if (result)
                             {
-                                Interlocked.Increment(ref _count);
                                 done = true;
                             }
                             else
@@ -159,7 +157,6 @@ namespace Theraot.Threading
                         {
                             if (result)
                             {
-                                Interlocked.Increment(ref _count);
                                 done = true;
                             }
                             else
@@ -191,6 +188,7 @@ namespace Theraot.Threading
         {
             _entriesOld = null;
             _entriesNew = new FixedSizeDeque<T>(INT_DefaultCapacity);
+            Thread.VolatileWrite(ref _status, 0);
             _revision++;
         }
 
