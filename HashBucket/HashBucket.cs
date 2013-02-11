@@ -20,6 +20,7 @@ namespace Theraot.Threading
 
         private int _copyingThreads;
         private int _copyPosition;
+        private int _count;
         private FixedSizeHashBucket<TKey, TValue> _entriesNew;
         private FixedSizeHashBucket<TKey, TValue> _entriesOld;
         private IEqualityComparer<TKey> _keyComparer;
@@ -131,7 +132,7 @@ namespace Theraot.Threading
         {
             get
             {
-                return _entriesNew.Count;
+                return _count;
             }
         }
 
@@ -188,6 +189,7 @@ namespace Theraot.Threading
                         {
                             if (result)
                             {
+                                Interlocked.Increment(ref _count);
                                 done = true;
                             }
                             else
@@ -314,6 +316,10 @@ namespace Theraot.Threading
                         var isOperationSafe = IsOperationSafe(entries, revision);
                         if (isOperationSafe == 0)
                         {
+                            if (result)
+                            {
+                                Interlocked.Decrement(ref _count);
+                            }
                             done = true;
                         }
                     }
@@ -347,6 +353,10 @@ namespace Theraot.Threading
                     {
                         if (IsOperationSafe(entries, revision) == 0)
                         {
+                            if (isNew)
+                            {
+                                Interlocked.Increment(ref _count);
+                            }
                             break;
                         }
                         else
