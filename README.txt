@@ -8,16 +8,34 @@ CircularBucket: Wait-free fixed size circular collection (array).
 HashBucket: Lock-free hash table.
 FixedSizeHashBucket: Wait-free fixed size (limited capacity) hash table.
 
-Deque: Lock-free deque (double queue).
-FixedSizeDeque: Wait-free fixed size (limited capacity) deque (double queue).
+Queue: Lock-free queue.
 
 SetBucket: Lock-free set.
 FixedSizeSetBucket: Wait-free fixed size (limited capacity) set.
 
 ---
 
-This software is free software: you can redistribute it or modify it under the terms of the GNU General Public License published by the Free Software Fundation at https://www.gnu.org/licenses/gpl.html either version 3 of the License, or (at your option) any later version. Any other license should be explicitly negotiated before using.
+Copyright 2012 - 2013 By Alfonso J. Ramos
+
+---
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+---
 
 This software is released with ONLY the following warranty: It did work on my machine.
+
+---
 
 A binary form can be found at: http://www.4shared.com/folder/AlOM5E7K/HashBucket.html
