@@ -5,27 +5,27 @@ using Theraot.Core;
 namespace Theraot.Threading
 {
     /// <summary>
-    /// Represent a fixed size thread-safe wait-free deque.
+    /// Represent a fixed size thread-safe wait-free queue.
     /// </summary>
-    public sealed class FixedSizeDeque<T> : IEnumerable<T>
+    internal sealed class FixedSizeQueue<T> : IEnumerable<T>
     {
         private readonly Bucket<T> _bucket;
         private readonly int _capacity;
 
-        private int _indexBack;
-        private int _indexFront;
+        private int _indexDequeue;
+        private int _indexEnqueue;
         private int _preCount;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="FixedSizeDeque{T}" /> class.
+        /// Initializes a new instance of the <see cref="FixedSizeQueue{T}" /> class.
         /// </summary>
         /// <param name="capacity">The capacity.</param>
-        public FixedSizeDeque(int capacity)
+        public FixedSizeQueue(int capacity)
         {
             _capacity = IntHelper.NextPowerOf2(capacity);
             _preCount = 0;
-            _indexFront = 0;
-            _indexBack = _capacity - 1;
+            _indexEnqueue = 0;
+            _indexDequeue = 0;
             _bucket = new Bucket<T>(_capacity);
         }
 
@@ -52,38 +52,38 @@ namespace Theraot.Threading
         }
 
         /// <summary>
-        /// Gets the index where the last item added with AddBack was placed.
+        /// Gets the index where the next item removed with TryDequeue will be taken from.
         /// </summary>
-        /// <remarks>IndexBack decreases each time a new item is added with AddBack.</remarks>
-        public int IndexBack
+        /// <remarks>IndexDequeue increases each time a new item is removed with TryDequeue.</remarks>
+        public int IndexDequeue
         {
             get
             {
-                return (Thread.VolatileRead(ref _indexBack) + 1) & (_capacity - 1);
+                return Thread.VolatileRead(ref _indexDequeue) & (_capacity - 1);
             }
 
             //HACK
             internal set
             {
-                _indexBack = value & (_capacity - 1);
+                _indexDequeue = value & (_capacity - 1);
             }
         }
 
         /// <summary>
-        /// Gets the index where the last item added with AddFront was placed.
+        /// Gets the index where the last item added with Enqueue was placed.
         /// </summary>
-        /// <remarks>IndexBack increases each time a new item is added with AddFront.</remarks>
-        public int IndexFront
+        /// <remarks>IndexEnqueue increases each time a new item is added with Enqueue.</remarks>
+        public int IndexEnqueue
         {
             get
             {
-                return (Thread.VolatileRead(ref _indexFront) - 1) & (_capacity - 1);
+                return Thread.VolatileRead(ref _indexEnqueue) & (_capacity - 1);
             }
 
             //HACK
             internal set
             {
-                _indexFront = value & (_capacity - 1);
+                _indexEnqueue = value & (_capacity - 1);
             }
         }
 
@@ -99,62 +99,29 @@ namespace Theraot.Threading
         }
 
         /// <summary>
-        /// Attempts to Adds the specified item at the back.
-        /// </summary>
-        /// <param name="item">The item.</param>
-        /// <returns>
-        ///   <c>true</c> if the item was added; otherwise, <c>false</c>.
-        /// </returns>
-        public bool AddBack(T item)
-        {
-            var preCount = Interlocked.Increment(ref _preCount);
-            if (preCount > _capacity)
-            {
-                return false;
-            }
-            else
-            {
-                var index = (Interlocked.Decrement(ref _indexBack) + 1) & (_capacity - 1);
-                if (_bucket.Insert(index, item))
-                {
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
-            }
-        }
-
-        /// <summary>
         /// Attempts to Adds the specified item at the front.
         /// </summary>
         /// <param name="item">The item.</param>
         /// <returns>
         ///   <c>true</c> if the item was added; otherwise, <c>false</c>.
         /// </returns>
-        public bool AddFront(T item)
+        public bool Enqueue(T item)
         {
-            var preCount = Interlocked.Increment(ref _preCount);
-            if (preCount > _capacity)
+            if (_bucket.Count < _capacity)
             {
-                return false;
-            }
-            else
-            {
-                var index = (Interlocked.Increment(ref _indexFront) - 1) & (_capacity - 1);
-                if (_bucket.Insert(index, item))
+                var preCount = Interlocked.Increment(ref _preCount);
+                if (preCount <= _capacity)
                 {
-                    return true;
+                    var index = (Interlocked.Increment(ref _indexEnqueue) - 1) & (_capacity - 1);
+                    if (_bucket.Insert(index, item))
+                    {
+                        return true;
+                    }
                 }
-                else
-                {
-                    Interlocked.Decrement(ref _preCount);
-                    return false;
-                }
+                Interlocked.Decrement(ref _preCount);
             }
+            return false;
         }
-
         /// <summary>
         /// Returns an <see cref="System.Collections.Generic.IEnumerator{T}" /> that allows to iterate through the collection.
         /// </summary>
@@ -170,28 +137,10 @@ namespace Theraot.Threading
         /// Returns the next item to be taken from the back without removing it.
         /// </summary>
         /// <exception cref="System.InvalidOperationException">No more items to be taken.</exception>
-        public T PeekBack()
+        public T Peek()
         {
             T item;
-            int index = Interlocked.Add(ref _indexFront, 0);
-            if (index < _capacity && index > 0 && _bucket.TryGet(index, out item))
-            {
-                return item;
-            }
-            else
-            {
-                throw new System.InvalidOperationException("Empty");
-            }
-        }
-
-        /// <summary>
-        /// Returns the next item to be taken from the front without removing it.
-        /// </summary>
-        /// <exception cref="System.InvalidOperationException">No more items to be taken.</exception>
-        public T PeekFront()
-        {
-            T item;
-            int index = Interlocked.Add(ref _indexFront, 0);
+            int index = Interlocked.Add(ref _indexEnqueue, 0);
             if (index < _capacity && index > 0 && _bucket.TryGet(index, out item))
             {
                 return item;
@@ -230,39 +179,23 @@ namespace Theraot.Threading
         /// <returns>
         ///   <c>true</c> if the item was taken; otherwise, <c>false</c>.
         /// </returns>
-        public bool TryTakeBack(out T item)
+        public bool TryDequeue(out T item)
         {
-            var index = Interlocked.Increment(ref _indexBack) & (_capacity - 1);
-            if (_bucket.RemoveAt(index, out item))
+            if (_bucket.Count > 0)
             {
-                Interlocked.Decrement(ref _preCount);
-                return true;
+                var preCount = Interlocked.Decrement(ref _preCount);
+                if (preCount >= 0)
+                {
+                    var index = (Interlocked.Increment(ref _indexDequeue) - 1) & (_capacity - 1);
+                    if (_bucket.RemoveAt(index, out item))
+                    {
+                        return true;
+                    }
+                }
+                Interlocked.Increment(ref _preCount);
             }
-            else
-            {
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// Attempts to retrieve and remove the next item from the front.
-        /// </summary>
-        /// <param name="item">The item.</param>
-        /// <returns>
-        ///   <c>true</c> if the item was taken; otherwise, <c>false</c>.
-        /// </returns>
-        public bool TryTakeFront(out T item)
-        {
-            var index = Interlocked.Decrement(ref _indexFront) & (_capacity - 1);
-            if (_bucket.RemoveAt(index, out item))
-            {
-                Interlocked.Decrement(ref _preCount);
-                return true;
-            }
-            else
-            {
-                return false;
-            }
+            item = default(T);
+            return false;
         }
 
         //HACK

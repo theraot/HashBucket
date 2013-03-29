@@ -229,6 +229,7 @@ namespace Theraot.Threading
             _entriesOld = null;
             _entriesNew = new FixedSizeHashBucket<TKey, TValue>(INT_DefaultCapacity, _keyComparer);
             Thread.VolatileWrite(ref _status, 0);
+            Thread.VolatileWrite(ref _count, 0);
             _revision++;
         }
 
@@ -551,6 +552,7 @@ namespace Theraot.Threading
                         // _status is 2 only for a short period.
                         // Still, it happens, so this is needed for correctness.
                         // Going completely wait-free adds complexity with deminished value.
+                        Thread.Sleep(0);
                         Thread.SpinWait(INT_SpinWaitHint);
                         break;
 

@@ -4,39 +4,41 @@ using System.Threading;
 namespace Theraot.Threading
 {
     /// <summary>
-    /// Represent a thread-safe lock-free deque.
+    /// Represent a thread-safe lock-free queue.
     /// </summary>
     /// <typeparam name="T">The type of the item.</typeparam>
-    public sealed class Deque<T> : IEnumerable<T>
+    public sealed class Queue<T> : IEnumerable<T>
     {
         private const int INT_DefaultCapacity = 64;
         private const int INT_SpinWaitHint = 80;
 
+        private object _synclock = new object();
         private int _copyingThreads;
-        private int _copyPosition;
+        private int _workingThreads;
+        private int _copySourcePosition;
         private int _count;
-        private FixedSizeDeque<T> _entriesNew;
-        private FixedSizeDeque<T> _entriesOld;
+        private FixedSizeQueue<T> _entriesNew;
+        private FixedSizeQueue<T> _entriesOld;
         private volatile int _revision;
         private int _status;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Deque{T}" /> class.
+        /// Initializes a new instance of the <see cref="Queue{T}" /> class.
         /// </summary>
-        public Deque()
+        public Queue()
             : this(INT_DefaultCapacity)
         {
             //Empty
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Deque{T}" /> class.
+        /// Initializes a new instance of the <see cref="Queue{T}" /> class.
         /// </summary>
         /// <param name="initialCapacity">The initial capacity.</param>
-        public Deque(int initialCapacity)
+        public Queue(int initialCapacity)
         {
             _entriesOld = null;
-            _entriesNew = new FixedSizeDeque<T>(initialCapacity);
+            _entriesNew = new FixedSizeQueue<T>(initialCapacity);
         }
 
         /// <summary>
@@ -73,69 +75,10 @@ namespace Theraot.Threading
         }
 
         /// <summary>
-        /// Adds the specified item at the back.
-        /// </summary>
-        /// <param name="item">The item.</param>
-        /// <returns>
-        ///   <c>true</c> if the item was added; otherwise, <c>false</c>.
-        /// </returns>
-        public void AddBack(T item)
-        {
-            bool result = false;
-            while (true)
-            {
-                bool done = false;
-                int revision = _revision;
-                if (IsOperationSafe() == 0)
-                {
-                    var entries = ThreadingHelper.VolatileRead(ref _entriesNew);
-                    try
-                    {
-                        if (entries.AddBack(item))
-                        {
-                            result = true;
-                        }
-                    }
-                    finally
-                    {
-                        var isOperationSafe = IsOperationSafe(entries, revision);
-                        if (isOperationSafe == 0)
-                        {
-                            if (result)
-                            {
-                                Interlocked.Increment(ref _count);
-                                done = true;
-                            }
-                            else
-                            {
-                                var oldStatus = Interlocked.CompareExchange(ref _status, 1, 0);
-                                if (oldStatus == 0)
-                                {
-                                    _revision++;
-                                }
-                            }
-                        }
-                    }
-                    if (done)
-                    {
-                        return;
-                    }
-                }
-                else
-                {
-                    CooperativeGrow();
-                }
-            }
-        }
-
-        /// <summary>
         /// Adds the specified item at the front.
         /// </summary>
         /// <param name="item">The item.</param>
-        /// <returns>
-        ///   <c>true</c> if the item was added; otherwise, <c>false</c>.
-        /// </returns>
-        public void AddFront(T item)
+        public void Enqueue(T item)
         {
             bool result = false;
             while (true)
@@ -147,28 +90,26 @@ namespace Theraot.Threading
                     var entries = ThreadingHelper.VolatileRead(ref _entriesNew);
                     try
                     {
-                        if (entries.AddFront(item))
+                        Interlocked.Increment(ref _workingThreads);
+                        if (entries.Enqueue(item))
                         {
                             result = true;
                         }
                     }
                     finally
                     {
-                        var isOperationSafe = IsOperationSafe(entries, revision);
-                        if (isOperationSafe == 0)
+                        Interlocked.Decrement(ref _workingThreads);
+                        if (result)
                         {
-                            if (result)
+                            Interlocked.Increment(ref _count);
+                            done = true;
+                        }
+                        else
+                        {
+                            var oldStatus = Interlocked.CompareExchange(ref _status, 1, 0);
+                            if (oldStatus == 0)
                             {
-                                Interlocked.Increment(ref _count);
-                                done = true;
-                            }
-                            else
-                            {
-                                var oldStatus = Interlocked.CompareExchange(ref _status, 1, 0);
-                                if (oldStatus == 0)
-                                {
-                                    _revision++;
-                                }
+                                _revision++;
                             }
                         }
                     }
@@ -190,7 +131,9 @@ namespace Theraot.Threading
         public void Clear()
         {
             _entriesOld = null;
-            _entriesNew = new FixedSizeDeque<T>(INT_DefaultCapacity);
+            _entriesNew = new FixedSizeQueue<T>(INT_DefaultCapacity);
+            Thread.VolatileWrite(ref _status, 0);
+            Thread.VolatileWrite(ref _count, 0);
             _revision++;
         }
 
@@ -209,7 +152,7 @@ namespace Theraot.Threading
         /// Returns the next item to be taken from the back without removing it.
         /// </summary>
         /// <exception cref="System.InvalidOperationException">No more items to be taken.</exception>
-        public T PeekBack(T item)
+        public T Peek(T item)
         {
             T result = default(T);
             while (true)
@@ -221,45 +164,7 @@ namespace Theraot.Threading
                     var entries = ThreadingHelper.VolatileRead(ref _entriesNew);
                     try
                     {
-                        result = entries.PeekBack();
-                    }
-                    finally
-                    {
-                        var isOperationSafe = IsOperationSafe(entries, revision);
-                        if (isOperationSafe == 0)
-                        {
-                            done = true;
-                        }
-                    }
-                    if (done)
-                    {
-                        return result;
-                    }
-                }
-                else
-                {
-                    CooperativeGrow();
-                }
-            }
-        }
-
-        /// <summary>
-        /// Returns the next item to be taken from the front without removing it.
-        /// </summary>
-        /// <exception cref="System.InvalidOperationException">No more items to be taken.</exception>
-        public T PeekFront(T item)
-        {
-            T result = default(T);
-            while (true)
-            {
-                bool done = false;
-                int revision = _revision;
-                if (IsOperationSafe() == 0)
-                {
-                    var entries = ThreadingHelper.VolatileRead(ref _entriesNew);
-                    try
-                    {
-                        result = entries.PeekFront();
+                        result = entries.Peek();
                     }
                     finally
                     {
@@ -344,7 +249,7 @@ namespace Theraot.Threading
         /// <returns>
         ///   <c>true</c> if the item was taken; otherwise, <c>false</c>.
         /// </returns>
-        public bool TryTakeBack(out T item)
+        public bool TryDequeue(out T item)
         {
             item = default(T);
             bool result = false;
@@ -357,8 +262,9 @@ namespace Theraot.Threading
                     var entries = ThreadingHelper.VolatileRead(ref _entriesNew);
                     try
                     {
+                        Interlocked.Increment(ref _workingThreads);
                         T tmpItem;
-                        if (entries.TryTakeBack(out tmpItem))
+                        if (entries.TryDequeue(out tmpItem))
                         {
                             item = tmpItem;
                             result = true;
@@ -366,58 +272,12 @@ namespace Theraot.Threading
                     }
                     finally
                     {
-                        var isOperationSafe = IsOperationSafe(entries, revision);
-                        if (isOperationSafe == 0)
+                        Interlocked.Decrement(ref _workingThreads);
+                        if (result)
                         {
-                            done = true;
+                            Interlocked.Decrement(ref _count);
                         }
-                    }
-                    if (done)
-                    {
-                        return result;
-                    }
-                }
-                else
-                {
-                    CooperativeGrow();
-                }
-            }
-        }
-
-        /// <summary>
-        /// Attempts to retrieve and remove the next item from the front.
-        /// </summary>
-        /// <param name="item">The item.</param>
-        /// <returns>
-        ///   <c>true</c> if the item was taken; otherwise, <c>false</c>.
-        /// </returns>
-        public bool TryTakeFront(out T item)
-        {
-            item = default(T);
-            bool result = false;
-            while (true)
-            {
-                bool done = false;
-                int revision = _revision;
-                if (IsOperationSafe() == 0)
-                {
-                    var entries = ThreadingHelper.VolatileRead(ref _entriesNew);
-                    try
-                    {
-                        T tmpItem;
-                        if (entries.TryTakeFront(out tmpItem))
-                        {
-                            item = tmpItem;
-                            result = true;
-                        }
-                    }
-                    finally
-                    {
-                        var isOperationSafe = IsOperationSafe(entries, revision);
-                        if (isOperationSafe == 0)
-                        {
-                            done = true;
-                        }
+                        done = true;
                     }
                     if (done)
                     {
@@ -448,9 +308,9 @@ namespace Theraot.Threading
                             try
                             {
                                 Thread.CurrentThread.Priority = ThreadPriority.Highest;
-                                Thread.VolatileWrite(ref _copyPosition, -1);
+                                Thread.VolatileWrite(ref _copySourcePosition, -1);
                                 var newCapacity = _entriesNew.Capacity * 2;
-                                _entriesOld = Interlocked.Exchange(ref _entriesNew, new FixedSizeDeque<T>(newCapacity));
+                                _entriesOld = Interlocked.Exchange(ref _entriesNew, new FixedSizeQueue<T>(newCapacity));
                                 oldStatus = Interlocked.CompareExchange(ref _status, 3, 2);
                             }
                             finally
@@ -462,10 +322,17 @@ namespace Theraot.Threading
                         break;
 
                     case 2:
+                        Thread.Sleep(0);
                         Thread.SpinWait(INT_SpinWaitHint);
                         break;
 
                     case 3:
+                        _revision++;
+                        while (Thread.VolatileRead(ref _workingThreads) > 0)
+                        {
+                            Thread.Sleep(0);
+                            Thread.SpinWait(INT_SpinWaitHint);
+                        }
                         var old = _entriesOld;
                         if (old != null)
                         {
@@ -473,27 +340,28 @@ namespace Theraot.Threading
                             Interlocked.Increment(ref _copyingThreads);
                             T item;
 
-                            var indexBack = old.IndexBack;
                             int capacity = old.Capacity;
+                            int offset = old.IndexDequeue;
 
-                            int index = Interlocked.Increment(ref _copyPosition);
-                            for (; index < capacity; index = Interlocked.Increment(ref _copyPosition))
+                            int sourceIndex = Interlocked.Increment(ref _copySourcePosition);
+                            while (sourceIndex < capacity)
                             {
                                 bool dummy;
-                                if (old.TryGet((index + indexBack) & (capacity - 1), out item))
+                                if (old.TryGet((sourceIndex + offset) & (capacity - 1), out item))
                                 {
                                     //HACK
-                                    _entriesNew.Set(index, item, out dummy);
+                                    _entriesNew.Set(sourceIndex, item, out dummy);
                                 }
+                                sourceIndex = Interlocked.Increment(ref _copySourcePosition);
                             }
-                            oldStatus = Interlocked.CompareExchange(ref _status, 4, 3);
-                            if (oldStatus == 3)
+                            oldStatus = Interlocked.CompareExchange(ref _status, 2, 3);
+                            _revision++;
+                            if (Interlocked.Decrement(ref _copyingThreads) == 0)
                             {
                                 //HACK
-                                _entriesNew.IndexFront = index;
+                                _entriesNew.IndexEnqueue = capacity;
+                                oldStatus = Interlocked.CompareExchange(ref _status, 4, 2);
                             }
-                            _revision++;
-                            Interlocked.Decrement(ref _copyingThreads);
                         }
                         break;
 
@@ -503,6 +371,7 @@ namespace Theraot.Threading
                         {
                             _revision++;
                             Interlocked.Exchange(ref _entriesOld, null);
+                            Thread.Sleep(1);
                             oldStatus = Interlocked.CompareExchange(ref _status, 0, 2);
                         }
                         break;
@@ -514,7 +383,7 @@ namespace Theraot.Threading
             while (status != 0);
         }
 
-        private int IsOperationSafe(FixedSizeDeque<T> entries, int revision)
+        private int IsOperationSafe(FixedSizeQueue<T> entries, int revision)
         {
             int result = 5;
             bool check = _revision != revision;
