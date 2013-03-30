@@ -167,14 +167,15 @@ namespace Theraot.Threading
         public void Add(TKey key, TValue value)
         {
             bool result = false;
+            int revision;
             while (true)
             {
-                bool done = false;
-                int revision = _revision;
+                revision = _revision;
                 if (IsOperationSafe() == 0)
                 {
                     bool isCollision = false;
                     var entries = ThreadingHelper.VolatileRead(ref _entriesNew);
+                    bool done = false;
                     try
                     {
                         if (AddExtracted(key, value, entries, out isCollision) != -1)
@@ -243,13 +244,14 @@ namespace Theraot.Threading
         public bool ContainsKey(TKey key)
         {
             bool result = false;
+            int revision;
             while (true)
             {
-                bool done = false;
-                int revision = _revision;
+                revision = _revision;
                 if (IsOperationSafe() == 0)
                 {
                     var entries = ThreadingHelper.VolatileRead(ref _entriesNew);
+                    bool done = false;
                     try
                     {
                         if (ContainsKeyExtracted(key, entries))
@@ -298,13 +300,14 @@ namespace Theraot.Threading
         public bool Remove(TKey key)
         {
             bool result = false;
+            int revision;
             while (true)
             {
-                bool done = false;
-                int revision = _revision;
+                revision = _revision;
                 if (IsOperationSafe() == 0)
                 {
                     var entries = ThreadingHelper.VolatileRead(ref _entriesNew);
+                    bool done = false;
                     try
                     {
                         if (RemoveExtracted(key, entries))
@@ -396,13 +399,14 @@ namespace Theraot.Threading
             value = default(TValue);
             key = default(TKey);
             bool result = false;
+            int revision;
             while (true)
             {
-                bool done = false;
-                int revision = _revision;
+                revision = _revision;
                 if (IsOperationSafe() == 0)
                 {
                     var entries = ThreadingHelper.VolatileRead(ref _entriesNew);
+                    bool done = false;
                     try
                     {
                         TValue tmpValue;
@@ -446,13 +450,14 @@ namespace Theraot.Threading
         {
             value = default(TValue);
             bool result = false;
+            int revision;
             while (true)
             {
-                bool done = false;
-                int revision = _revision;
+                revision = _revision;
                 if (IsOperationSafe() == 0)
                 {
                     var entries = ThreadingHelper.VolatileRead(ref _entriesNew);
+                    bool done = false;
                     try
                     {
                         TValue tmpValue;
@@ -605,7 +610,7 @@ namespace Theraot.Threading
             while (status != 0);
         }
 
-        private int IsOperationSafe(FixedSizeHashBucket<TKey, TValue> entries, int revision)
+        private int IsOperationSafe(object entries, int revision)
         {
             int result = 5;
             bool check = _revision != revision;

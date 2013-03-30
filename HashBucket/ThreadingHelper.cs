@@ -2,7 +2,7 @@
 
 namespace Theraot.Threading
 {
-    [System.Diagnostics.DebuggerNonUserCode]
+    [global::System.Diagnostics.DebuggerNonUserCode]
     public static class ThreadingHelper
     {
         /// <summary>
