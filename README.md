@@ -12,7 +12,7 @@ CircularBucket: Wait-free fixed size circular collection (array).
 HashBucket: Lock-free hash table.
 FixedSizeHashBucket: Wait-free fixed size (limited capacity) hash table.
 
-Queue: Lock-free queue.
+QueueBucket: Lock-free queue.
 
 SetBucket: Lock-free set.
 FixedSizeSetBucket: Wait-free fixed size (limited capacity) set.

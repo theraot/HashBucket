@@ -7,7 +7,7 @@ namespace Theraot.Threading
     /// <summary>
     /// Represent a fixed size thread-safe wait-free queue.
     /// </summary>
-    internal sealed class FixedSizeQueue<T> : IEnumerable<T>
+    internal sealed class FixedSizeQueueBucket<T> : IEnumerable<T>
     {
         private readonly Bucket<T> _bucket;
         private readonly int _capacity;
@@ -17,10 +17,10 @@ namespace Theraot.Threading
         private int _preCount;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="FixedSizeQueue{T}" /> class.
+        /// Initializes a new instance of the <see cref="FixedSizeQueueBucket{T}" /> class.
         /// </summary>
         /// <param name="capacity">The capacity.</param>
-        public FixedSizeQueue(int capacity)
+        public FixedSizeQueueBucket(int capacity)
         {
             _capacity = IntHelper.NextPowerOf2(capacity);
             _preCount = 0;

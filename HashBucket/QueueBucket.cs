@@ -7,7 +7,7 @@ namespace Theraot.Threading
     /// Represent a thread-safe lock-free queue.
     /// </summary>
     /// <typeparam name="T">The type of the item.</typeparam>
-    public sealed class Queue<T> : IEnumerable<T>
+    public sealed class QueueBucket<T> : IEnumerable<T>
     {
         private const int INT_DefaultCapacity = 64;
         private const int INT_SpinWaitHint = 80;
@@ -17,28 +17,28 @@ namespace Theraot.Threading
         private int _workingThreads;
         private int _copySourcePosition;
         private int _count;
-        private FixedSizeQueue<T> _entriesNew;
-        private FixedSizeQueue<T> _entriesOld;
+        private FixedSizeQueueBucket<T> _entriesNew;
+        private FixedSizeQueueBucket<T> _entriesOld;
         private volatile int _revision;
         private int _status;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Queue{T}" /> class.
+        /// Initializes a new instance of the <see cref="QueueBucket{T}" /> class.
         /// </summary>
-        public Queue()
+        public QueueBucket()
             : this(INT_DefaultCapacity)
         {
             //Empty
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Queue{T}" /> class.
+        /// Initializes a new instance of the <see cref="QueueBucket{T}" /> class.
         /// </summary>
         /// <param name="initialCapacity">The initial capacity.</param>
-        public Queue(int initialCapacity)
+        public QueueBucket(int initialCapacity)
         {
             _entriesOld = null;
-            _entriesNew = new FixedSizeQueue<T>(initialCapacity);
+            _entriesNew = new FixedSizeQueueBucket<T>(initialCapacity);
         }
 
         /// <summary>
@@ -131,7 +131,7 @@ namespace Theraot.Threading
         public void Clear()
         {
             _entriesOld = null;
-            _entriesNew = new FixedSizeQueue<T>(INT_DefaultCapacity);
+            _entriesNew = new FixedSizeQueueBucket<T>(INT_DefaultCapacity);
             Thread.VolatileWrite(ref _status, 0);
             Thread.VolatileWrite(ref _count, 0);
             _revision++;
@@ -310,7 +310,7 @@ namespace Theraot.Threading
                                 Thread.CurrentThread.Priority = ThreadPriority.Highest;
                                 Thread.VolatileWrite(ref _copySourcePosition, -1);
                                 var newCapacity = _entriesNew.Capacity * 2;
-                                _entriesOld = Interlocked.Exchange(ref _entriesNew, new FixedSizeQueue<T>(newCapacity));
+                                _entriesOld = Interlocked.Exchange(ref _entriesNew, new FixedSizeQueueBucket<T>(newCapacity));
                                 oldStatus = Interlocked.CompareExchange(ref _status, 3, 2);
                             }
                             finally
@@ -383,7 +383,7 @@ namespace Theraot.Threading
             while (status != 0);
         }
 
-        private int IsOperationSafe(FixedSizeQueue<T> entries, int revision)
+        private int IsOperationSafe(FixedSizeQueueBucket<T> entries, int revision)
         {
             int result = 5;
             bool check = _revision != revision;
