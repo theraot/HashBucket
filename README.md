@@ -1,3 +1,7 @@
+---
+Contents
+---
+
 This software library for .NET 2.0 includes:
 
 Bucket: Wait-free fixed size collection (array).
@@ -14,28 +18,36 @@ SetBucket: Lock-free set.
 FixedSizeSetBucket: Wait-free fixed size (limited capacity) set.
 
 ---
+Copyright
+---
 
 Copyright 2012 - 2013 By Alfonso J. Ramos
 
 ---
+License
+---
 
     This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
+    it under the terms of the GNU Lesser General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+    GNU Lesser General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
+    You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ---
-
-This software is released with ONLY the following warranty: It did work on my machine.
-
+Waranty
 ---
 
-A binary form can be found at: http://www.4shared.com/folder/AlOM5E7K/HashBucket.html
+Aside from the license, I can only waranty the following: It did work on my machine.
+
+---
+Binary
+---
+
+The binary downloads are available form: http://www.4shared.com/folder/AlOM5E7K/HashBucket.html
