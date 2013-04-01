@@ -64,7 +64,7 @@ namespace Theraot.Threading
                     var entry = Interlocked.CompareExchange(ref _entries[index], null, null);
                     if (entry != null)
                     {
-                        if (ReferenceEquals(entry, Bucket.Null))
+                        if (ReferenceEquals(entry, BucketHelper.Null))
                         {
                             result.Add(default(T));
                         }
@@ -106,7 +106,7 @@ namespace Theraot.Threading
                 {
                     if (entry != null)
                     {
-                        if (ReferenceEquals(entry, Bucket.Null))
+                        if (ReferenceEquals(entry, BucketHelper.Null))
                         {
                             array[arrayIndex] = default(T);
                         }
@@ -136,7 +136,7 @@ namespace Theraot.Threading
             {
                 if (entry != null)
                 {
-                    if (ReferenceEquals(entry, Bucket.Null))
+                    if (ReferenceEquals(entry, BucketHelper.Null))
                     {
                         yield return default(T);
                     }
@@ -213,7 +213,7 @@ namespace Theraot.Threading
                 }
                 else
                 {
-                    if (ReferenceEquals(_previous, Bucket.Null))
+                    if (ReferenceEquals(_previous, BucketHelper.Null))
                     {
                         previous = default(T);
                     }
@@ -276,7 +276,7 @@ namespace Theraot.Threading
                 if (RemoveAtExtracted(index, out _previous))
                 {
                     Interlocked.Decrement(ref _count);
-                    if (ReferenceEquals(_previous, Bucket.Null))
+                    if (ReferenceEquals(_previous, BucketHelper.Null))
                     {
                         previous = default(T);
                     }
@@ -357,7 +357,7 @@ namespace Theraot.Threading
                 }
                 else
                 {
-                    if (ReferenceEquals(entry, Bucket.Null))
+                    if (ReferenceEquals(entry, BucketHelper.Null))
                     {
                         value = default(T);
                     }
@@ -372,7 +372,7 @@ namespace Theraot.Threading
 
         private bool InsertExtracted(int index, object item, out object previous)
         {
-            previous = Interlocked.CompareExchange(ref _entries[index], item ?? Bucket.Null, null);
+            previous = Interlocked.CompareExchange(ref _entries[index], item ?? BucketHelper.Null, null);
             return previous == null;
         }
 
@@ -384,16 +384,16 @@ namespace Theraot.Threading
 
         private bool SetExtracted(int index, object item, out bool isNew)
         {
-            isNew = Interlocked.Exchange(ref _entries[index], item ?? Bucket.Null) == null;
+            isNew = Interlocked.Exchange(ref _entries[index], item ?? BucketHelper.Null) == null;
             return true;
         }
     }
 
-    internal static class Bucket
+    internal static class BucketHelper
     {
         private static readonly object _null;
 
-        static Bucket()
+        static BucketHelper()
         {
             _null = new object();
         }
