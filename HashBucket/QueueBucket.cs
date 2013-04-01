@@ -86,7 +86,7 @@ namespace Theraot.Threading
                 if (IsOperationSafe() == 0)
                 {
                     var entries = ThreadingHelper.VolatileRead(ref _entriesNew);
-					bool done = false;
+                    bool done = false;
                     try
                     {
                         Interlocked.Increment(ref _workingThreads);
@@ -160,7 +160,7 @@ namespace Theraot.Threading
                 if (IsOperationSafe() == 0)
                 {
                     var entries = ThreadingHelper.VolatileRead(ref _entriesNew);
-					bool done = false;
+                    bool done = false;
                     try
                     {
                         result = entries.Peek();
@@ -211,7 +211,7 @@ namespace Theraot.Threading
                 if (IsOperationSafe() == 0)
                 {
                     var entries = ThreadingHelper.VolatileRead(ref _entriesNew);
-					bool done = false;
+                    bool done = false;
                     try
                     {
                         T tmpItem;
@@ -257,7 +257,7 @@ namespace Theraot.Threading
                 if (IsOperationSafe() == 0)
                 {
                     var entries = ThreadingHelper.VolatileRead(ref _entriesNew);
-					bool done = false;
+                    bool done = false;
                     try
                     {
                         Interlocked.Increment(ref _workingThreads);
@@ -347,7 +347,7 @@ namespace Theraot.Threading
                                 if (old.TryGet((sourceIndex + offset) & (capacity - 1), out item))
                                 {
                                     //HACK
-									bool dummy;
+                                    bool dummy;
                                     _entriesNew.Set(sourceIndex, item, out dummy);
                                 }
                                 sourceIndex = Interlocked.Increment(ref _copySourcePosition);
