@@ -13,17 +13,10 @@ namespace Theraot.Threading
     /// </remarks>
     public sealed class Bucket<T> : IEnumerable<T>
     {
-        private static readonly object _null;
-
         private readonly int _capacity;
         private readonly object[] _entries;
 
         private int _count;
-
-        static Bucket()
-        {
-            _null = new object();
-        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Bucket{T}" /> class.
@@ -71,7 +64,7 @@ namespace Theraot.Threading
                     var entry = Interlocked.CompareExchange(ref _entries[index], null, null);
                     if (entry != null)
                     {
-                        if (entry == _null)
+                        if (ReferenceEquals(entry, Bucket.Null))
                         {
                             result.Add(default(T));
                         }
@@ -113,7 +106,7 @@ namespace Theraot.Threading
                 {
                     if (entry != null)
                     {
-                        if (entry == _null)
+                        if (ReferenceEquals(entry, Bucket.Null))
                         {
                             array[arrayIndex] = default(T);
                         }
@@ -143,7 +136,7 @@ namespace Theraot.Threading
             {
                 if (entry != null)
                 {
-                    if (entry == _null)
+                    if (ReferenceEquals(entry, Bucket.Null))
                     {
                         yield return default(T);
                     }
@@ -220,7 +213,7 @@ namespace Theraot.Threading
                 }
                 else
                 {
-                    if (_previous == _null)
+                    if (ReferenceEquals(_previous, Bucket.Null))
                     {
                         previous = default(T);
                     }
@@ -283,7 +276,7 @@ namespace Theraot.Threading
                 if (RemoveAtExtracted(index, out _previous))
                 {
                     Interlocked.Decrement(ref _count);
-                    if (_previous == _null)
+                    if (ReferenceEquals(_previous, Bucket.Null))
                     {
                         previous = default(T);
                     }
@@ -364,7 +357,7 @@ namespace Theraot.Threading
                 }
                 else
                 {
-                    if (entry == _null)
+                    if (ReferenceEquals(entry, Bucket.Null))
                     {
                         value = default(T);
                     }
@@ -379,7 +372,7 @@ namespace Theraot.Threading
 
         private bool InsertExtracted(int index, object item, out object previous)
         {
-            previous = Interlocked.CompareExchange(ref _entries[index], item ?? _null, null);
+            previous = Interlocked.CompareExchange(ref _entries[index], item ?? Bucket.Null, null);
             return previous == null;
         }
 
@@ -391,8 +384,26 @@ namespace Theraot.Threading
 
         private bool SetExtracted(int index, object item, out bool isNew)
         {
-            isNew = Interlocked.Exchange(ref _entries[index], item ?? _null) == null;
+            isNew = Interlocked.Exchange(ref _entries[index], item ?? Bucket.Null) == null;
             return true;
+        }
+    }
+
+    internal static class Bucket
+    {
+        private static readonly object _null;
+
+        static Bucket()
+        {
+            _null = new object();
+        }
+
+        public static object Null
+        {
+            get
+            {
+                return _null;
+            }
         }
     }
 }
