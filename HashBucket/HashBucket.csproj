@@ -37,6 +37,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Bucket.cs" />
+    <Compile Include="BucketHelper.cs" />
     <Compile Include="CircularBucket.cs" />
     <Compile Include="FixedSizeHashBucket.cs" />
     <Compile Include="FixedSizeQueueBucket.cs" />
