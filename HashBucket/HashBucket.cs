@@ -585,7 +585,7 @@ namespace Theraot.Threading
                                     }
                                 }
                             }
-                            oldStatus = Interlocked.CompareExchange(ref _status, 4, 3);
+                            Interlocked.CompareExchange(ref _status, 4, 3);
                             _revision++;
                             Interlocked.Decrement(ref _copyingThreads);
                         }
@@ -599,7 +599,7 @@ namespace Theraot.Threading
                         {
                             _revision++;
                             Interlocked.Exchange(ref _entriesOld, null);
-                            oldStatus = Interlocked.CompareExchange(ref _status, 0, 2);
+                            Interlocked.CompareExchange(ref _status, 0, 2);
                         }
                         break;
 

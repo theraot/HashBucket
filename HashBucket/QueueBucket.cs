@@ -83,11 +83,10 @@ namespace Theraot.Threading
             bool result = false;
             while (true)
             {
-                bool done = false;
-                int revision = _revision;
                 if (IsOperationSafe() == 0)
                 {
                     var entries = ThreadingHelper.VolatileRead(ref _entriesNew);
+					bool done = false;
                     try
                     {
                         Interlocked.Increment(ref _workingThreads);
@@ -157,11 +156,11 @@ namespace Theraot.Threading
             T result = default(T);
             while (true)
             {
-                bool done = false;
                 int revision = _revision;
                 if (IsOperationSafe() == 0)
                 {
                     var entries = ThreadingHelper.VolatileRead(ref _entriesNew);
+					bool done = false;
                     try
                     {
                         result = entries.Peek();
@@ -208,11 +207,11 @@ namespace Theraot.Threading
             bool result = false;
             while (true)
             {
-                bool done = false;
                 int revision = _revision;
                 if (IsOperationSafe() == 0)
                 {
                     var entries = ThreadingHelper.VolatileRead(ref _entriesNew);
+					bool done = false;
                     try
                     {
                         T tmpItem;
@@ -255,11 +254,10 @@ namespace Theraot.Threading
             bool result = false;
             while (true)
             {
-                bool done = false;
-                int revision = _revision;
                 if (IsOperationSafe() == 0)
                 {
                     var entries = ThreadingHelper.VolatileRead(ref _entriesNew);
+					bool done = false;
                     try
                     {
                         Interlocked.Increment(ref _workingThreads);
@@ -346,21 +344,21 @@ namespace Theraot.Threading
                             int sourceIndex = Interlocked.Increment(ref _copySourcePosition);
                             while (sourceIndex < capacity)
                             {
-                                bool dummy;
                                 if (old.TryGet((sourceIndex + offset) & (capacity - 1), out item))
                                 {
                                     //HACK
+									bool dummy;
                                     _entriesNew.Set(sourceIndex, item, out dummy);
                                 }
                                 sourceIndex = Interlocked.Increment(ref _copySourcePosition);
                             }
-                            oldStatus = Interlocked.CompareExchange(ref _status, 2, 3);
+                            Interlocked.CompareExchange(ref _status, 2, 3);
                             _revision++;
                             if (Interlocked.Decrement(ref _copyingThreads) == 0)
                             {
                                 //HACK
                                 _entriesNew.IndexEnqueue = capacity;
-                                oldStatus = Interlocked.CompareExchange(ref _status, 4, 2);
+                                Interlocked.CompareExchange(ref _status, 4, 2);
                             }
                         }
                         break;
@@ -372,7 +370,7 @@ namespace Theraot.Threading
                             _revision++;
                             Interlocked.Exchange(ref _entriesOld, null);
                             Thread.Sleep(1);
-                            oldStatus = Interlocked.CompareExchange(ref _status, 0, 2);
+                            Interlocked.CompareExchange(ref _status, 0, 2);
                         }
                         break;
 
@@ -383,7 +381,7 @@ namespace Theraot.Threading
             while (status != 0);
         }
 
-        private int IsOperationSafe(FixedSizeQueueBucket<T> entries, int revision)
+        private int IsOperationSafe(object entries, int revision)
         {
             int result = 5;
             bool check = _revision != revision;

@@ -165,14 +165,15 @@ namespace Theraot.Threading
         public void Add(T item)
         {
             bool result = false;
+            int revision;
             while (true)
             {
-                bool done = false;
-                int revision = _revision;
+                revision = _revision;
                 if (IsOperationSafe() == 0)
                 {
                     bool isCollision = false;
                     var entries = ThreadingHelper.VolatileRead(ref _entriesNew);
+                    bool done = false;
                     try
                     {
                         if (AddExtracted(item, entries, out isCollision) != -1)
@@ -227,6 +228,7 @@ namespace Theraot.Threading
             _entriesOld = null;
             _entriesNew = new FixedSizeSetBucket<T>(INT_DefaultCapacity, _comparer);
             Thread.VolatileWrite(ref _status, 0);
+            Thread.VolatileWrite(ref _count, 0);
             _revision++;
         }
 
@@ -240,13 +242,14 @@ namespace Theraot.Threading
         public bool Contains(T item)
         {
             bool result = false;
+            int revision;
             while (true)
             {
-                bool done = false;
-                int revision = _revision;
+                revision = _revision;
                 if (IsOperationSafe() == 0)
                 {
                     var entries = ThreadingHelper.VolatileRead(ref _entriesNew);
+                    bool done = false;
                     try
                     {
                         if (ContainsExtracted(item, entries))
@@ -295,13 +298,14 @@ namespace Theraot.Threading
         public bool Remove(T item)
         {
             bool result = false;
+            int revision;
             while (true)
             {
-                bool done = false;
-                int revision = _revision;
+                revision = _revision;
                 if (IsOperationSafe() == 0)
                 {
                     var entries = ThreadingHelper.VolatileRead(ref _entriesNew);
+                    bool done = false;
                     try
                     {
                         if (RemoveExtracted(item, entries))
@@ -350,13 +354,14 @@ namespace Theraot.Threading
         {
             item = default(T);
             bool result = false;
+            int revision;
             while (true)
             {
-                bool done = false;
-                int revision = _revision;
+                revision = _revision;
                 if (IsOperationSafe() == 0)
                 {
                     var entries = ThreadingHelper.VolatileRead(ref _entriesNew);
+                    bool done = false;
                     try
                     {
                         T tmpItem;
@@ -456,6 +461,7 @@ namespace Theraot.Threading
                         // _status is 2 only for a short period.
                         // Still, it happens, so this is needed for correctness.
                         // Going completely wait-free adds complexity with deminished value.
+                        Thread.Sleep(0);
                         Thread.SpinWait(INT_SpinWaitHint);
                         break;
 
@@ -484,7 +490,7 @@ namespace Theraot.Threading
                                     }
                                 }
                             }
-                            oldStatus = Interlocked.CompareExchange(ref _status, 4, 3);
+                            Interlocked.CompareExchange(ref _status, 4, 3);
                             _revision++;
                             Interlocked.Decrement(ref _copyingThreads);
                         }
@@ -498,7 +504,7 @@ namespace Theraot.Threading
                         {
                             _revision++;
                             Interlocked.Exchange(ref _entriesOld, null);
-                            oldStatus = Interlocked.CompareExchange(ref _status, 0, 2);
+                            Interlocked.CompareExchange(ref _status, 0, 2);
                         }
                         break;
 
@@ -509,7 +515,7 @@ namespace Theraot.Threading
             while (status != 0);
         }
 
-        private int IsOperationSafe(FixedSizeSetBucket<T> entries, int revision)
+        private int IsOperationSafe(object entries, int revision)
         {
             int result = 5;
             bool check = _revision != revision;

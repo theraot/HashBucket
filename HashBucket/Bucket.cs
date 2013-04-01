@@ -105,7 +105,7 @@ namespace Theraot.Threading
             }
             if (_count > array.Length - arrayIndex)
             {
-                throw new ArgumentException("array", "The array can not contain the number of elements.");
+				throw new ArgumentException ("The array can not contain the number of elements.", "array");
             }
             try
             {
