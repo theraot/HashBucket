@@ -17,6 +17,11 @@ namespace Theraot.Threading
         private const int INT_DefaultCapacity = 64;
         private const int INT_DefaultMaxProbing = 1;
         private const int INT_SpinWaitHint = 80;
+        private const int INT_StatusFree = 0;
+        private const int INT_StatusGrowRequested = 1;
+        private const int INT_StatusWaiting = 2;
+        private const int INT_StatusCopy = 3;
+        private const int INT_StatusCopyCleanup = 4;
 
         private int _copyingThreads;
         private int _copyPosition;
@@ -197,8 +202,8 @@ namespace Theraot.Threading
                             {
                                 if (isCollision)
                                 {
-                                    var oldStatus = Interlocked.CompareExchange(ref _status, 1, 0);
-                                    if (oldStatus == 0)
+                                    var oldStatus = Interlocked.CompareExchange(ref _status, INT_StatusGrowRequested, INT_StatusFree);
+                                    if (oldStatus == INT_StatusFree)
                                     {
                                         _revision++;
                                     }
@@ -229,7 +234,7 @@ namespace Theraot.Threading
         {
             _entriesOld = null;
             _entriesNew = new FixedSizeHashBucket<TKey, TValue>(INT_DefaultCapacity, _keyComparer);
-            Thread.VolatileWrite(ref _status, 0);
+            Thread.VolatileWrite(ref _status, INT_StatusFree);
             Thread.VolatileWrite(ref _count, 0);
             _revision++;
         }
@@ -353,7 +358,7 @@ namespace Theraot.Threading
                 {
                     bool isNew;
                     var entries = ThreadingHelper.VolatileRead(ref _entriesNew);
-                    if (SetExtracted(key, value, entries, out isNew) != -1)
+                    if (SetExtracted(key, value, entries, out isNew) != -INT_StatusGrowRequested)
                     {
                         if (IsOperationSafe(entries, revision) == 0)
                         {
@@ -365,8 +370,8 @@ namespace Theraot.Threading
                         }
                         else
                         {
-                            int oldStatus = Interlocked.CompareExchange(ref _status, 1, 0);
-                            if (oldStatus == 0)
+                            int oldStatus = Interlocked.CompareExchange(ref _status, INT_StatusGrowRequested, INT_StatusFree);
+                            if (oldStatus == INT_StatusFree)
                             {
                                 _revision++;
                             }
@@ -518,29 +523,31 @@ namespace Theraot.Threading
 
         private void CooperativeGrow()
         {
-            int status = 0;
+            int status = INT_StatusFree;
             do
             {
                 status = Thread.VolatileRead(ref _status);
                 int oldStatus;
                 switch (status)
                 {
-                    case 1:
+                    case INT_StatusGrowRequested:
 
                         // This area is only accessed by one thread, if that thread is aborted, we are doomed.
                         // This class is not abort safe, aside from a thread being aborted here, a thread being aborted on status == 2 will mean lost items
                         var priority = Thread.CurrentThread.Priority;
-                        oldStatus = Interlocked.CompareExchange(ref _status, 2, 1);
-                        if (oldStatus == 1)
+                        oldStatus = Interlocked.CompareExchange(ref _status, INT_StatusWaiting, INT_StatusGrowRequested);
+                        if (oldStatus == INT_StatusGrowRequested)
                         {
                             try
                             {
                                 // The progress of other threads depend of this one, we should not allow a priority inversion.
                                 Thread.CurrentThread.Priority = ThreadPriority.Highest;
+                                //_copyPosition is set to -1. _copyPosition is incremented before it is used, so the first time it is used it will be 0.
                                 Thread.VolatileWrite(ref _copyPosition, -1);
+                                //The new capacity is twice the old capacity, the capacity must be a power of two.
                                 var newCapacity = _entriesNew.Capacity * 2;
                                 _entriesOld = Interlocked.Exchange(ref _entriesNew, new FixedSizeHashBucket<TKey, TValue>(newCapacity, _keyComparer));
-                                oldStatus = Interlocked.CompareExchange(ref _status, 3, 2);
+                                oldStatus = Interlocked.CompareExchange(ref _status, INT_StatusCopy, INT_StatusWaiting);
                             }
                             finally
                             {
@@ -550,7 +557,7 @@ namespace Theraot.Threading
                         }
                         break;
 
-                    case 2:
+                    case INT_StatusWaiting:
 
                         // This is the whole reason why this datastructure is not wait free.
                         // Testing shows that it is uncommon that a thread enters here.
@@ -561,7 +568,7 @@ namespace Theraot.Threading
                         Thread.SpinWait(INT_SpinWaitHint);
                         break;
 
-                    case 3:
+                    case INT_StatusCopy:
 
                         // It is time to cooperate to copy the old storage to the new one
                         var old = _entriesOld;
@@ -585,21 +592,21 @@ namespace Theraot.Threading
                                     }
                                 }
                             }
-                            Interlocked.CompareExchange(ref _status, 4, 3);
+                            Interlocked.CompareExchange(ref _status, INT_StatusCopyCleanup, INT_StatusCopy);
                             _revision++;
                             Interlocked.Decrement(ref _copyingThreads);
                         }
                         break;
 
-                    case 4:
+                    case INT_StatusCopyCleanup:
 
                         // Our copy is finished, we don't need the old storage anymore
-                        oldStatus = Interlocked.CompareExchange(ref _status, 2, 4);
-                        if (oldStatus == 4)
+                        oldStatus = Interlocked.CompareExchange(ref _status, INT_StatusWaiting, INT_StatusCopyCleanup);
+                        if (oldStatus == INT_StatusCopyCleanup)
                         {
                             _revision++;
                             Interlocked.Exchange(ref _entriesOld, null);
-                            Interlocked.CompareExchange(ref _status, 0, 2);
+                            Interlocked.CompareExchange(ref _status, INT_StatusFree, INT_StatusWaiting);
                         }
                         break;
 
@@ -607,7 +614,7 @@ namespace Theraot.Threading
                         break;
                 }
             }
-            while (status != 0);
+            while (status != INT_StatusFree);
         }
 
         private int IsOperationSafe(object entries, int revision)
@@ -627,8 +634,8 @@ namespace Theraot.Threading
                 }
                 else
                 {
-                    var newStatus = Interlocked.CompareExchange(ref _status, 0, 0);
-                    if (newStatus != 0)
+                    var newStatus = Interlocked.CompareExchange(ref _status, INT_StatusFree, INT_StatusFree);
+                    if (newStatus != INT_StatusFree)
                     {
                         result = 2;
                     }
@@ -651,8 +658,8 @@ namespace Theraot.Threading
 
         private int IsOperationSafe()
         {
-            var newStatus = Interlocked.CompareExchange(ref _status, 0, 0);
-            if (newStatus != 0)
+            var newStatus = Interlocked.CompareExchange(ref _status, INT_StatusFree, INT_StatusFree);
+            if (newStatus != INT_StatusFree)
             {
                 return 2;
             }
