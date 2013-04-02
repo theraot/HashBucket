@@ -358,7 +358,7 @@ namespace Theraot.Threading
                 {
                     bool isNew;
                     var entries = ThreadingHelper.VolatileRead(ref _entriesNew);
-                    if (SetExtracted(key, value, entries, out isNew) != -INT_StatusGrowRequested)
+                    if (SetExtracted(key, value, entries, out isNew) != -1)
                     {
                         if (IsOperationSafe(entries, revision))
                         {
