@@ -17,11 +17,6 @@ namespace Theraot.Threading
         private const int INT_DefaultCapacity = 64;
         private const int INT_DefaultMaxProbing = 1;
         private const int INT_SpinWaitHint = 80;
-        private const int INT_StatusFree = 0;
-        private const int INT_StatusGrowRequested = 1;
-        private const int INT_StatusWaiting = 2;
-        private const int INT_StatusCopy = 3;
-        private const int INT_StatusCopyCleanup = 4;
 
         private int _copyingThreads;
         private int _copyPosition;
@@ -202,8 +197,8 @@ namespace Theraot.Threading
                             {
                                 if (isCollision)
                                 {
-                                    var oldStatus = Interlocked.CompareExchange(ref _status, INT_StatusGrowRequested, INT_StatusFree);
-                                    if (oldStatus == INT_StatusFree)
+                                    var oldStatus = Interlocked.CompareExchange(ref _status, (int)BucketStatus.GrowRequested, (int)BucketStatus.Free);
+                                    if (oldStatus == (int)BucketStatus.Free)
                                     {
                                         _revision++;
                                     }
@@ -234,7 +229,7 @@ namespace Theraot.Threading
         {
             _entriesOld = null;
             _entriesNew = new FixedSizeHashBucket<TKey, TValue>(INT_DefaultCapacity, _keyComparer);
-            Thread.VolatileWrite(ref _status, INT_StatusFree);
+            Thread.VolatileWrite(ref _status, (int)BucketStatus.Free);
             Thread.VolatileWrite(ref _count, 0);
             _revision++;
         }
@@ -370,8 +365,8 @@ namespace Theraot.Threading
                         }
                         else
                         {
-                            int oldStatus = Interlocked.CompareExchange(ref _status, INT_StatusGrowRequested, INT_StatusFree);
-                            if (oldStatus == INT_StatusFree)
+                            int oldStatus = Interlocked.CompareExchange(ref _status, (int)BucketStatus.GrowRequested, (int)BucketStatus.Free);
+                            if (oldStatus == (int)BucketStatus.Free)
                             {
                                 _revision++;
                             }
@@ -523,20 +518,20 @@ namespace Theraot.Threading
 
         private void CooperativeGrow()
         {
-            int status = INT_StatusFree;
+            int status = (int)BucketStatus.Free;
             do
             {
                 status = Thread.VolatileRead(ref _status);
                 int oldStatus;
                 switch (status)
                 {
-                    case INT_StatusGrowRequested:
+                    case (int)BucketStatus.GrowRequested:
 
                         // This area is only accessed by one thread, if that thread is aborted, we are doomed.
                         // This class is not abort safe, aside from a thread being aborted here, a thread being aborted on status == 2 will mean lost items
                         var priority = Thread.CurrentThread.Priority;
-                        oldStatus = Interlocked.CompareExchange(ref _status, INT_StatusWaiting, INT_StatusGrowRequested);
-                        if (oldStatus == INT_StatusGrowRequested)
+                        oldStatus = Interlocked.CompareExchange(ref _status, (int)BucketStatus.Waiting, (int)BucketStatus.GrowRequested);
+                        if (oldStatus == (int)BucketStatus.GrowRequested)
                         {
                             try
                             {
@@ -547,7 +542,7 @@ namespace Theraot.Threading
                                 //The new capacity is twice the old capacity, the capacity must be a power of two.
                                 var newCapacity = _entriesNew.Capacity * 2;
                                 _entriesOld = Interlocked.Exchange(ref _entriesNew, new FixedSizeHashBucket<TKey, TValue>(newCapacity, _keyComparer));
-                                oldStatus = Interlocked.CompareExchange(ref _status, INT_StatusCopy, INT_StatusWaiting);
+                                oldStatus = Interlocked.CompareExchange(ref _status, (int)BucketStatus.Copy, (int)BucketStatus.Waiting);
                             }
                             finally
                             {
@@ -557,7 +552,7 @@ namespace Theraot.Threading
                         }
                         break;
 
-                    case INT_StatusWaiting:
+                    case (int)BucketStatus.Waiting:
 
                         // This is the whole reason why this datastructure is not wait free.
                         // Testing shows that it is uncommon that a thread enters here.
@@ -568,7 +563,7 @@ namespace Theraot.Threading
                         Thread.SpinWait(INT_SpinWaitHint);
                         break;
 
-                    case INT_StatusCopy:
+                    case (int)BucketStatus.Copy:
 
                         // It is time to cooperate to copy the old storage to the new one
                         var old = _entriesOld;
@@ -592,21 +587,21 @@ namespace Theraot.Threading
                                     }
                                 }
                             }
-                            Interlocked.CompareExchange(ref _status, INT_StatusCopyCleanup, INT_StatusCopy);
+                            Interlocked.CompareExchange(ref _status, (int)BucketStatus.CopyCleanup, (int)BucketStatus.Copy);
                             _revision++;
                             Interlocked.Decrement(ref _copyingThreads);
                         }
                         break;
 
-                    case INT_StatusCopyCleanup:
+                    case (int)BucketStatus.CopyCleanup:
 
                         // Our copy is finished, we don't need the old storage anymore
-                        oldStatus = Interlocked.CompareExchange(ref _status, INT_StatusWaiting, INT_StatusCopyCleanup);
-                        if (oldStatus == INT_StatusCopyCleanup)
+                        oldStatus = Interlocked.CompareExchange(ref _status, (int)BucketStatus.Waiting, (int)BucketStatus.CopyCleanup);
+                        if (oldStatus == (int)BucketStatus.CopyCleanup)
                         {
                             _revision++;
                             Interlocked.Exchange(ref _entriesOld, null);
-                            Interlocked.CompareExchange(ref _status, INT_StatusFree, INT_StatusWaiting);
+                            Interlocked.CompareExchange(ref _status, (int)BucketStatus.Free, (int)BucketStatus.Waiting);
                         }
                         break;
 
@@ -614,7 +609,7 @@ namespace Theraot.Threading
                         break;
                 }
             }
-            while (status != INT_StatusFree);
+            while (status != (int)BucketStatus.Free);
         }
 
         private bool IsOperationSafe(object entries, int revision)
@@ -633,8 +628,8 @@ namespace Theraot.Threading
                 }
                 else
                 {
-                    var newStatus = Interlocked.CompareExchange(ref _status, INT_StatusFree, INT_StatusFree);
-                    if (newStatus != INT_StatusFree)
+                    var newStatus = Interlocked.CompareExchange(ref _status, (int)BucketStatus.Free, (int)BucketStatus.Free);
+                    if (newStatus != (int)BucketStatus.Free)
                     {
                         return false;
                     }
@@ -656,8 +651,8 @@ namespace Theraot.Threading
 
         private bool IsOperationSafe()
         {
-            var newStatus = Interlocked.CompareExchange(ref _status, INT_StatusFree, INT_StatusFree);
-            if (newStatus != INT_StatusFree)
+            var newStatus = Interlocked.CompareExchange(ref _status, (int)BucketStatus.Free, (int)BucketStatus.Free);
+            if (newStatus != (int)BucketStatus.Free)
             {
                 return false;
             }
@@ -742,5 +737,14 @@ namespace Theraot.Threading
         //  Items may be added or removed during enumeration without causing an exception.
         //  A version mechanism is not in place.
         //  This can be added by a wrapper.
+    }
+
+    internal enum BucketStatus
+    {
+        Free = 0,
+        GrowRequested = 1,
+        Waiting = 2,
+        Copy = 3,
+        CopyCleanup = 4
     }
 }
