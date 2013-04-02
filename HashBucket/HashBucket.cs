@@ -176,7 +176,7 @@ namespace Theraot.Threading
             while (true)
             {
                 revision = _revision;
-                if (IsOperationSafe() == 0)
+                if (IsOperationSafe())
                 {
                     bool isCollision = false;
                     var entries = ThreadingHelper.VolatileRead(ref _entriesNew);
@@ -191,7 +191,7 @@ namespace Theraot.Threading
                     finally
                     {
                         var isOperationSafe = IsOperationSafe(entries, revision);
-                        if (isOperationSafe == 0)
+                        if (isOperationSafe)
                         {
                             if (result)
                             {
@@ -253,7 +253,7 @@ namespace Theraot.Threading
             while (true)
             {
                 revision = _revision;
-                if (IsOperationSafe() == 0)
+                if (IsOperationSafe())
                 {
                     var entries = ThreadingHelper.VolatileRead(ref _entriesNew);
                     bool done = false;
@@ -267,7 +267,7 @@ namespace Theraot.Threading
                     finally
                     {
                         var isOperationSafe = IsOperationSafe(entries, revision);
-                        if (isOperationSafe == 0)
+                        if (isOperationSafe)
                         {
                             done = true;
                         }
@@ -309,7 +309,7 @@ namespace Theraot.Threading
             while (true)
             {
                 revision = _revision;
-                if (IsOperationSafe() == 0)
+                if (IsOperationSafe())
                 {
                     var entries = ThreadingHelper.VolatileRead(ref _entriesNew);
                     bool done = false;
@@ -323,7 +323,7 @@ namespace Theraot.Threading
                     finally
                     {
                         var isOperationSafe = IsOperationSafe(entries, revision);
-                        if (isOperationSafe == 0)
+                        if (isOperationSafe)
                         {
                             if (result)
                             {
@@ -354,13 +354,13 @@ namespace Theraot.Threading
             while (true)
             {
                 int revision = _revision;
-                if (IsOperationSafe() == 0)
+                if (IsOperationSafe())
                 {
                     bool isNew;
                     var entries = ThreadingHelper.VolatileRead(ref _entriesNew);
                     if (SetExtracted(key, value, entries, out isNew) != -INT_StatusGrowRequested)
                     {
-                        if (IsOperationSafe(entries, revision) == 0)
+                        if (IsOperationSafe(entries, revision))
                         {
                             if (isNew)
                             {
@@ -408,7 +408,7 @@ namespace Theraot.Threading
             while (true)
             {
                 revision = _revision;
-                if (IsOperationSafe() == 0)
+                if (IsOperationSafe())
                 {
                     var entries = ThreadingHelper.VolatileRead(ref _entriesNew);
                     bool done = false;
@@ -426,7 +426,7 @@ namespace Theraot.Threading
                     finally
                     {
                         var isOperationSafe = IsOperationSafe(entries, revision);
-                        if (isOperationSafe == 0)
+                        if (isOperationSafe)
                         {
                             done = true;
                         }
@@ -459,7 +459,7 @@ namespace Theraot.Threading
             while (true)
             {
                 revision = _revision;
-                if (IsOperationSafe() == 0)
+                if (IsOperationSafe())
                 {
                     var entries = ThreadingHelper.VolatileRead(ref _entriesNew);
                     bool done = false;
@@ -475,7 +475,7 @@ namespace Theraot.Threading
                     finally
                     {
                         var isOperationSafe = IsOperationSafe(entries, revision);
-                        if (isOperationSafe == 0)
+                        if (isOperationSafe)
                         {
                             done = true;
                         }
@@ -617,62 +617,60 @@ namespace Theraot.Threading
             while (status != INT_StatusFree);
         }
 
-        private int IsOperationSafe(object entries, int revision)
+        private bool IsOperationSafe(object entries, int revision)
         {
-            int result = 5;
             bool check = _revision != revision;
             if (check)
             {
-                result = 4;
+                return false;
             }
             else
             {
                 var newEntries = Interlocked.CompareExchange(ref _entriesNew, null, null);
                 if (entries != newEntries)
                 {
-                    result = 3;
+                    return false;
                 }
                 else
                 {
                     var newStatus = Interlocked.CompareExchange(ref _status, INT_StatusFree, INT_StatusFree);
                     if (newStatus != INT_StatusFree)
                     {
-                        result = 2;
+                        return false;
                     }
                     else
                     {
                         if (Thread.VolatileRead(ref _copyingThreads) > 0)
                         {
                             _revision++;
-                            result = 1;
+                            return false;
                         }
                         else
                         {
-                            result = 0;
+                            return true;
                         }
                     }
                 }
             }
-            return result;
         }
 
-        private int IsOperationSafe()
+        private bool IsOperationSafe()
         {
             var newStatus = Interlocked.CompareExchange(ref _status, INT_StatusFree, INT_StatusFree);
             if (newStatus != INT_StatusFree)
             {
-                return 2;
+                return false;
             }
             else
             {
                 if (Thread.VolatileRead(ref _copyingThreads) > 0)
                 {
                     _revision++;
-                    return 1;
+                    return false;
                 }
                 else
                 {
-                    return 0;
+                    return true;
                 }
             }
         }
