@@ -738,13 +738,4 @@ namespace Theraot.Threading
         //  A version mechanism is not in place.
         //  This can be added by a wrapper.
     }
-
-    internal enum BucketStatus
-    {
-        Free = 0,
-        GrowRequested = 1,
-        Waiting = 2,
-        Copy = 3,
-        CopyCleanup = 4
-    }
 }
