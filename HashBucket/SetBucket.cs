@@ -529,18 +529,10 @@ namespace Theraot.Threading
             else
             {
                 var newEntries = Interlocked.CompareExchange(ref _entriesNew, null, null);
-                if (entries != newEntries)
-                {
-                    return false;
-                }
-                else
+                if (entries == newEntries)
                 {
                     var newStatus = Interlocked.CompareExchange(ref _status, (int)BucketStatus.Free, (int)BucketStatus.Free);
-                    if (newStatus != (int)BucketStatus.Free)
-                    {
-                        return false;
-                    }
-                    else
+                    if (newStatus == (int)BucketStatus.Free)
                     {
                         if (Thread.VolatileRead(ref _copyingThreads) > 0)
                         {
@@ -552,6 +544,14 @@ namespace Theraot.Threading
                             return true;
                         }
                     }
+                    else
+                    {
+                        return false;
+                    }
+                }
+                else
+                {
+                    return false;
                 }
             }
         }
@@ -559,11 +559,7 @@ namespace Theraot.Threading
         private bool IsOperationSafe()
         {
             var newStatus = Interlocked.CompareExchange(ref _status, (int)BucketStatus.Free, (int)BucketStatus.Free);
-            if (newStatus != (int)BucketStatus.Free)
-            {
-                return false;
-            }
-            else
+            if (newStatus == (int)BucketStatus.Free)
             {
                 if (Thread.VolatileRead(ref _copyingThreads) > 0)
                 {
@@ -574,6 +570,10 @@ namespace Theraot.Threading
                 {
                     return true;
                 }
+            }
+            else
+            {
+                return false;
             }
         }
 
