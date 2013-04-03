@@ -528,7 +528,8 @@ namespace Theraot.Threading
                     case (int)BucketStatus.GrowRequested:
 
                         // This area is only accessed by one thread, if that thread is aborted, we are doomed.
-                        // This class is not abort safe, aside from a thread being aborted here, a thread being aborted on status == 2 will mean lost items
+                        // This class is not abort safe
+                        // If a thread is being aborted here it's pending operation will be lost and there is risk of a livelock
                         var priority = Thread.CurrentThread.Priority;
                         oldStatus = Interlocked.CompareExchange(ref _status, (int)BucketStatus.Waiting, (int)BucketStatus.GrowRequested);
                         if (oldStatus == (int)BucketStatus.GrowRequested)
@@ -569,7 +570,8 @@ namespace Theraot.Threading
                         var old = _entriesOld;
                         if (old != null)
                         {
-                            // This class is not abort safe, aside from a thread being aborted here (causing lost items) a thread being aborted on status == 1 will mean a livelock
+                            // This class is not abort safe
+                            // If a thread is being aborted here it will causing lost items.
                             _revision++;
                             Interlocked.Increment(ref _copyingThreads);
                             TKey key;
