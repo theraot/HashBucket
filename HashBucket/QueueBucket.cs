@@ -105,7 +105,7 @@ namespace Theraot.Threading
                         }
                         else
                         {
-                            var oldStatus = Interlocked.CompareExchange(ref _status, 1, 0);
+                            var oldStatus = Interlocked.CompareExchange(ref _status, (int)BucketStatus.GrowRequested, (int)BucketStatus.Free);
                             if (oldStatus == 0)
                             {
                                 _revision++;
@@ -131,7 +131,7 @@ namespace Theraot.Threading
         {
             _entriesOld = null;
             _entriesNew = new FixedSizeQueueBucket<T>(INT_DefaultCapacity);
-            Thread.VolatileWrite(ref _status, 0);
+            Thread.VolatileWrite(ref _status, (int)BucketStatus.Free);
             Thread.VolatileWrite(ref _count, 0);
             _revision++;
         }
@@ -298,10 +298,10 @@ namespace Theraot.Threading
                 int oldStatus;
                 switch (status)
                 {
-                    case 1:
+                    case (int)BucketStatus.GrowRequested:
                         var priority = Thread.CurrentThread.Priority;
-                        oldStatus = Interlocked.CompareExchange(ref _status, 2, 1);
-                        if (oldStatus == 1)
+                        oldStatus = Interlocked.CompareExchange(ref _status, (int)BucketStatus.Waiting, (int)BucketStatus.GrowRequested);
+                        if (oldStatus == (int)BucketStatus.GrowRequested)
                         {
                             try
                             {
@@ -309,7 +309,7 @@ namespace Theraot.Threading
                                 Thread.VolatileWrite(ref _copySourcePosition, -1);
                                 var newCapacity = _entriesNew.Capacity * 2;
                                 _entriesOld = Interlocked.Exchange(ref _entriesNew, new FixedSizeQueueBucket<T>(newCapacity));
-                                oldStatus = Interlocked.CompareExchange(ref _status, 3, 2);
+                                oldStatus = Interlocked.CompareExchange(ref _status, (int)BucketStatus.Copy, (int)BucketStatus.Waiting);
                             }
                             finally
                             {
@@ -319,12 +319,12 @@ namespace Theraot.Threading
                         }
                         break;
 
-                    case 2:
+                    case (int)BucketStatus.Waiting:
                         Thread.Sleep(0);
                         Thread.SpinWait(INT_SpinWaitHint);
                         break;
 
-                    case 3:
+                    case (int)BucketStatus.Copy:
                         _revision++;
                         while (Thread.VolatileRead(ref _workingThreads) > 0)
                         {
@@ -352,25 +352,25 @@ namespace Theraot.Threading
                                 }
                                 sourceIndex = Interlocked.Increment(ref _copySourcePosition);
                             }
-                            Interlocked.CompareExchange(ref _status, 2, 3);
+                            Interlocked.CompareExchange(ref _status, (int)BucketStatus.Waiting, (int)BucketStatus.Copy);
                             _revision++;
                             if (Interlocked.Decrement(ref _copyingThreads) == 0)
                             {
                                 //HACK
                                 _entriesNew.IndexEnqueue = capacity;
-                                Interlocked.CompareExchange(ref _status, 4, 2);
+                                Interlocked.CompareExchange(ref _status, (int)BucketStatus.CopyCleanup, (int)BucketStatus.Waiting);
                             }
                         }
                         break;
 
-                    case 4:
-                        oldStatus = Interlocked.CompareExchange(ref _status, 2, 4);
+                    case (int)BucketStatus.CopyCleanup:
+                        oldStatus = Interlocked.CompareExchange(ref _status, (int)BucketStatus.Waiting, 4);
                         if (oldStatus == 4)
                         {
                             _revision++;
                             Interlocked.Exchange(ref _entriesOld, null);
                             Thread.Sleep(1);
-                            Interlocked.CompareExchange(ref _status, 0, 2);
+                            Interlocked.CompareExchange(ref _status, (int)BucketStatus.Free, (int)BucketStatus.Waiting);
                         }
                         break;
 
@@ -378,7 +378,7 @@ namespace Theraot.Threading
                         break;
                 }
             }
-            while (status != 0);
+            while (status != (int)BucketStatus.Waiting);
         }
 
         private bool IsOperationSafe(object entries, int revision)
