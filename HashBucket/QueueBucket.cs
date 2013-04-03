@@ -291,7 +291,7 @@ namespace Theraot.Threading
 
         private void CooperativeGrow()
         {
-            int status = 0;
+            int status;
             do
             {
                 status = Thread.VolatileRead(ref _status);
