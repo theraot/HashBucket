@@ -518,7 +518,7 @@ namespace Theraot.Threading
 
         private void CooperativeGrow()
         {
-            int status = (int)BucketStatus.Free;
+            int status;
             do
             {
                 status = Thread.VolatileRead(ref _status);
