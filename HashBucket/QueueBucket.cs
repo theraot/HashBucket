@@ -397,7 +397,7 @@ namespace Theraot.Threading
                 }
                 else
                 {
-                    var newStatus = Interlocked.CompareExchange(ref _status, 0, 0);
+                    var newStatus = Interlocked.CompareExchange(ref _status, (int)BucketStatus.Free, (int)BucketStatus.Free);
                     if (newStatus != (int)BucketStatus.Free)
                     {
                         return false;
