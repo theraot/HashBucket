@@ -106,7 +106,7 @@ namespace Theraot.Threading
                         else
                         {
                             var oldStatus = Interlocked.CompareExchange(ref _status, (int)BucketStatus.GrowRequested, (int)BucketStatus.Free);
-                            if (oldStatus == 0)
+                            if (oldStatus == (int)BucketStatus.Free)
                             {
                                 _revision++;
                             }
@@ -365,7 +365,7 @@ namespace Theraot.Threading
 
                     case (int)BucketStatus.CopyCleanup:
                         oldStatus = Interlocked.CompareExchange(ref _status, (int)BucketStatus.Waiting, 4);
-                        if (oldStatus == 4)
+                        if (oldStatus == (int)BucketStatus.CopyCleanup)
                         {
                             _revision++;
                             Interlocked.Exchange(ref _entriesOld, null);
@@ -398,7 +398,7 @@ namespace Theraot.Threading
                 else
                 {
                     var newStatus = Interlocked.CompareExchange(ref _status, 0, 0);
-                    if (newStatus != 0)
+                    if (newStatus != (int)BucketStatus.Free)
                     {
                         return false;
                     }
@@ -420,8 +420,8 @@ namespace Theraot.Threading
 
         private bool IsOperationSafe()
         {
-            var newStatus = Interlocked.CompareExchange(ref _status, 0, 0);
-            if (newStatus != 0)
+            var newStatus = Interlocked.CompareExchange(ref _status, (int)BucketStatus.Free, (int)BucketStatus.Free);
+            if (newStatus != (int)BucketStatus.Free)
             {
                 return false;
             }
