@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Threading;
 
 namespace Theraot.Threading
@@ -12,15 +12,15 @@ namespace Theraot.Threading
         private const int INT_DefaultCapacity = 64;
         private const int INT_SpinWaitHint = 80;
 
-        private object _synclock = new object();
         private int _copyingThreads;
-        private int _workingThreads;
         private int _copySourcePosition;
         private int _count;
         private FixedSizeQueueBucket<T> _entriesNew;
         private FixedSizeQueueBucket<T> _entriesOld;
         private volatile int _revision;
         private int _status;
+        private object _synclock = new object();
+        private int _workingThreads;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="QueueBucket{T}" /> class.
@@ -75,6 +75,18 @@ namespace Theraot.Threading
         }
 
         /// <summary>
+        /// Removes all the elements.
+        /// </summary>
+        public void Clear()
+        {
+            _entriesOld = null;
+            _entriesNew = new FixedSizeQueueBucket<T>(INT_DefaultCapacity);
+            Thread.VolatileWrite(ref _status, (int)BucketStatus.Free);
+            Thread.VolatileWrite(ref _count, 0);
+            _revision++;
+        }
+
+        /// <summary>
         /// Adds the specified item at the front.
         /// </summary>
         /// <param name="item">The item.</param>
@@ -123,19 +135,6 @@ namespace Theraot.Threading
                 }
             }
         }
-
-        /// <summary>
-        /// Removes all the elements.
-        /// </summary>
-        public void Clear()
-        {
-            _entriesOld = null;
-            _entriesNew = new FixedSizeQueueBucket<T>(INT_DefaultCapacity);
-            Thread.VolatileWrite(ref _status, (int)BucketStatus.Free);
-            Thread.VolatileWrite(ref _count, 0);
-            _revision++;
-        }
-
         /// <summary>
         /// Returns an <see cref="System.Collections.Generic.IEnumerator{T}" /> that allows to iterate through the collection.
         /// </summary>
@@ -191,6 +190,54 @@ namespace Theraot.Threading
         }
 
         /// <summary>
+        /// Attempts to retrieve and remove the next item from the back.
+        /// </summary>
+        /// <param name="item">The item.</param>
+        /// <returns>
+        ///   <c>true</c> if the item was taken; otherwise, <c>false</c>.
+        /// </returns>
+        public bool TryDequeue(out T item)
+        {
+            item = default(T);
+            bool result = false;
+            while (true)
+            {
+                if (IsOperationSafe())
+                {
+                    var entries = ThreadingHelper.VolatileRead(ref _entriesNew);
+                    bool done = false;
+                    try
+                    {
+                        Interlocked.Increment(ref _workingThreads);
+                        T tmpItem;
+                        if (entries.TryDequeue(out tmpItem))
+                        {
+                            item = tmpItem;
+                            result = true;
+                        }
+                    }
+                    finally
+                    {
+                        Interlocked.Decrement(ref _workingThreads);
+                        if (result)
+                        {
+                            Interlocked.Decrement(ref _count);
+                        }
+                        done = true;
+                    }
+                    if (done)
+                    {
+                        return result;
+                    }
+                }
+                else
+                {
+                    CooperativeGrow();
+                }
+            }
+        }
+
+        /// <summary>
         /// Tries the retrieve the item at an specified index.
         /// </summary>
         /// <param name="index">The index.</param>
@@ -241,54 +288,6 @@ namespace Theraot.Threading
             }
         }
 
-        /// <summary>
-        /// Attempts to retrieve and remove the next item from the back.
-        /// </summary>
-        /// <param name="item">The item.</param>
-        /// <returns>
-        ///   <c>true</c> if the item was taken; otherwise, <c>false</c>.
-        /// </returns>
-        public bool TryDequeue(out T item)
-        {
-            item = default(T);
-            bool result = false;
-            while (true)
-            {
-                if (IsOperationSafe())
-                {
-                    var entries = ThreadingHelper.VolatileRead(ref _entriesNew);
-                    bool done = false;
-                    try
-                    {
-                        Interlocked.Increment(ref _workingThreads);
-                        T tmpItem;
-                        if (entries.TryDequeue(out tmpItem))
-                        {
-                            item = tmpItem;
-                            result = true;
-                        }
-                    }
-                    finally
-                    {
-                        Interlocked.Decrement(ref _workingThreads);
-                        if (result)
-                        {
-                            Interlocked.Decrement(ref _count);
-                        }
-                        done = true;
-                    }
-                    if (done)
-                    {
-                        return result;
-                    }
-                }
-                else
-                {
-                    CooperativeGrow();
-                }
-            }
-        }
-
         private void CooperativeGrow()
         {
             int status;
@@ -320,16 +319,23 @@ namespace Theraot.Threading
                         break;
 
                     case (int)BucketStatus.Waiting:
-                        Thread.Sleep(0);
                         Thread.SpinWait(INT_SpinWaitHint);
+                        if (Thread.VolatileRead(ref _status) == 2)
+                        {
+                            Thread.Sleep(0);
+                        }
                         break;
 
                     case (int)BucketStatus.Copy:
                         _revision++;
-                        while (Thread.VolatileRead(ref _workingThreads) > 0)
+                        if (Thread.VolatileRead(ref _workingThreads) > 0)
                         {
-                            Thread.Sleep(0);
                             Thread.SpinWait(INT_SpinWaitHint);
+                            while (Thread.VolatileRead(ref _workingThreads) > 0)
+                            {
+                                Thread.Sleep(0);
+                                Thread.SpinWait(INT_SpinWaitHint);
+                            }
                         }
                         var old = _entriesOld;
                         if (old != null)

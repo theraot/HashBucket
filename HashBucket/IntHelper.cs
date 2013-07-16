@@ -1,6 +1,6 @@
 ﻿namespace Theraot.Core
 {
-    internal static class IntHelper
+    public static class NumericHelper
     {
         /// <summary>
         /// Calculates the next the power of 2 after the specified number.

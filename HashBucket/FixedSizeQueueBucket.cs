@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Threading;
 using Theraot.Core;
 
@@ -22,7 +22,7 @@ namespace Theraot.Threading
         /// <param name="capacity">The capacity.</param>
         public FixedSizeQueueBucket(int capacity)
         {
-            _capacity = IntHelper.NextPowerOf2(capacity);
+            _capacity = NumericHelper.NextPowerOf2(capacity);
             _preCount = 0;
             _indexEnqueue = 0;
             _indexDequeue = 0;
@@ -158,22 +158,6 @@ namespace Theraot.Threading
         }
 
         /// <summary>
-        /// Tries the retrieve the item at an specified index.
-        /// </summary>
-        /// <param name="index">The index.</param>
-        /// <param name="item">The item.</param>
-        /// <returns>
-        ///   <c>true</c> if the value was retrieved; otherwise, <c>false</c>.
-        /// </returns>
-        /// <remarks>
-        /// Although items are ordered, they are not guaranteed to start at index 0.
-        /// </remarks>
-        public bool TryGet(int index, out T item)
-        {
-            return _bucket.TryGet(index, out item);
-        }
-
-        /// <summary>
         /// Attempts to retrieve and remove the next item from the back.
         /// </summary>
         /// <param name="item">The item.</param>
@@ -197,6 +181,22 @@ namespace Theraot.Threading
             }
             item = default(T);
             return false;
+        }
+
+        /// <summary>
+        /// Tries the retrieve the item at an specified index.
+        /// </summary>
+        /// <param name="index">The index.</param>
+        /// <param name="item">The item.</param>
+        /// <returns>
+        ///   <c>true</c> if the value was retrieved; otherwise, <c>false</c>.
+        /// </returns>
+        /// <remarks>
+        /// Although items are ordered, they are not guaranteed to start at index 0.
+        /// </remarks>
+        public bool TryGet(int index, out T item)
+        {
+            return _bucket.TryGet(index, out item);
         }
 
         //HACK

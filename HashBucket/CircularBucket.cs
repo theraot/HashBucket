@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Threading;
 using Theraot.Core;
 
@@ -24,7 +24,7 @@ namespace Theraot.Threading
         /// <param name="capacity">The capacity.</param>
         public CircularBucket(int capacity)
         {
-            _capacity = IntHelper.NextPowerOf2(capacity);
+            _capacity = NumericHelper.NextPowerOf2(capacity);
             _index = -1;
             _bucket = new Bucket<T>(_capacity);
         }

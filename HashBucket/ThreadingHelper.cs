@@ -11,7 +11,6 @@ namespace Theraot.Threading
         /// <typeparam name="T">The type of the field.</typeparam>
         /// <param name="address">The field to be read.</param>
         /// <returns>The latest value written to the field by any processor.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1045:DoNotPassTypesByReference", Justification = "By Design")]
         public static T VolatileRead<T>(ref T address)
             where T : class
         {
@@ -26,7 +25,6 @@ namespace Theraot.Threading
         /// <typeparam name="T">The type of the field.</typeparam>
         /// <param name="address">The field to which the value is to be written.</param>
         /// <param name="value">The value to be written.</param>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1045:DoNotPassTypesByReference", Justification = "By Design")]
         public static void VolatileWrite<T>(ref T address, T value)
             where T : class
         {
