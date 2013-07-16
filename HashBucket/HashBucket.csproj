@@ -39,7 +39,7 @@
     <Compile Include="FixedSizeQueueBucket.cs" />
     <Compile Include="FixedSizeSetBucket.cs" />
     <Compile Include="HashBucket.cs" />
-    <Compile Include="IntHelper.cs" />
+    <Compile Include="NumericHelper.cs" />
     <Compile Include="LazyBucket.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QueueBucket.cs" />
